@@ -26,14 +26,11 @@
 
 @interface CRDSession : NSObject <NSMachPortDelegate, NSStreamDelegate, NSWindowDelegate>
 {
-	// Represented rdesktop object
-	RDConnectionRef conn;
-
 	// User configurable RDP settings
-	NSString *label, *hostName, *username, *password, *domain, *clientHostname;	
+	NSString *username, *password, *domain;	
 	BOOL savePassword, forwardDisks, forwardPrinters, drawDesktop, windowDrags, windowAnimation, themes, fontSmoothing, consoleSession, fullscreen;
-	NSInteger forwardAudio, port;
-	NSInteger hotkey, screenDepth, screenWidth, screenHeight, displayMode;
+	NSInteger port;
+	NSInteger screenDepth, screenWidth, screenHeight;
 	NSMutableDictionary *otherAttributes;
 	
 	// Working between main thread and connection thread
@@ -44,9 +41,8 @@
 	NSMutableArray *inputEventStack;
 
 	// General information about instance
-	BOOL isTemporary, modified, temporarilyFullscreen, _usesScrollers;
+	BOOL temporarilyFullscreen, _usesScrollers;
 	NSInteger preferredRowIndex;
-	volatile CRDConnectionStatus connectionStatus;
 	
 	// Represented file
 	NSString *rdpFilename;
@@ -58,10 +54,7 @@
 	NSInteger clipboardChangeCount;
 
 	// UI elements
-	CRDSessionView *view;
 	NSScrollView *scrollEnclosure;
-	CRDServerCell *cellRepresentation;
-	NSWindow *window;
 }
 
 @property (copy,nonatomic) NSString *hostName, *label, *clientHostname;
