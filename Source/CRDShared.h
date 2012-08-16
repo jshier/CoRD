@@ -16,7 +16,7 @@
 */
 
 /*	Purpose: General shared routines and values within CoRD.
-	Note: All of these routines require an NSAutoReleasePool be allocated.
+	Note: All of these routines require an autoreleasepool to be in place.
 */
 
 

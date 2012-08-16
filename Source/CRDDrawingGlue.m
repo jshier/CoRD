@@ -225,7 +225,7 @@ void ui_desktop_save(RDConnectionRef conn, uint32 offset, int x, int y, int w, i
 		while (i++ < len)
 		{
 			uint32 searchColor = (p[3] << 16) | (p[2] << 8) | p[1]; // transform ARGB into BGR
-			NSNumber *memoizedIndex = [memoizedColors objectForKey:[NSNumber numberWithUnsignedInt:searchColor]];
+			NSNumber *memoizedIndex = memoizedColors[@(searchColor)];
 			
 			if (memoizedIndex)
 				o[0] = [memoizedIndex unsignedCharValue];
@@ -258,7 +258,7 @@ void ui_desktop_save(RDConnectionRef conn, uint32 offset, int x, int y, int w, i
 				}
 				
 				o[0] = bestIndex;
-				[memoizedColors setObject:[NSNumber numberWithUnsignedChar:bestIndex] forKey:[NSNumber numberWithUnsignedInt:searchColor]];		
+				memoizedColors[@(searchColor)] = [NSNumber numberWithUnsignedChar:bestIndex];		
 			}
 
 			p += 4;
@@ -317,7 +317,7 @@ void ui_desktop_restore(RDConnectionRef conn, uint32 offset, int x, int y, int w
 	
 	[[b image] setFlipped:NO];
 	[v focusBackingStore]; {
-		[[[[b image] representations] objectAtIndex:0] setProperty:NSImageColorSyncProfileData withValue:[[NSColorSpace genericRGBColorSpace] ICCProfileData]];
+		[[[b image] representations][0] setProperty:NSImageColorSyncProfileData withValue:[[NSColorSpace genericRGBColorSpace] ICCProfileData]];
 		[b drawInRect:r fromRect:NSMakeRect(0,0,w,h) operation:NSCompositeCopy];
 	} [v releaseBackingStore];
 	
@@ -341,7 +341,7 @@ void ui_end_update(RDConnectionRef conn)
 	LOCALS_FROM_CONN;
 	
 	if (conn->updateEntireScreen)
-		[v performSelectorOnMainThread:@selector(setNeedsDisplayOnMainThread:) withObject:[NSNumber numberWithBool:YES] waitUntilDone:NO];
+		[v performSelectorOnMainThread:@selector(setNeedsDisplayOnMainThread:) withObject:@YES waitUntilDone:NO];
 	
 	conn->updateEntireScreen = NO;
 }

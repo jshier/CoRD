@@ -30,11 +30,11 @@
 
 - (void)awakeFromNib
 {
-	[screenResolutionsController setSortDescriptors:[NSArray arrayWithObject:[[[NSSortDescriptor alloc] initWithKey:@"resolution" ascending:YES selector:@selector(compareScreenResolution:)] autorelease]]];
+	[screenResolutionsController setSortDescriptors:@[[[[NSSortDescriptor alloc] initWithKey:@"resolution" ascending:YES selector:@selector(compareScreenResolution:)] autorelease]]];
 	[screenResolutionsController addObserver:self forKeyPath:@"sortDescriptors" options:0 context:NULL];
-	[self changePanes:[[toolbar items] objectAtIndex:0]];
+	[self changePanes:[toolbar items][0]];
 	
-	[savedServersPathControl registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+	[savedServersPathControl registerForDraggedTypes:@[NSFilenamesPboardType]];
 }
 
 - (IBAction)changePanes:(id)sender
@@ -149,7 +149,7 @@
 	NSSet *excludedKeys = [NSSet setWithObjects:@"CRDScreenResolutions", nil];
 	for (NSString *defaultKey in builtInDefaults)
 		if (![excludedKeys containsObject:defaultKey])
-			[[NSUserDefaults standardUserDefaults] setObject:[builtInDefaults objectForKey:defaultKey] forKey:defaultKey];
+			[[NSUserDefaults standardUserDefaults] setObject:builtInDefaults[defaultKey] forKey:defaultKey];
 }
 
 
@@ -164,7 +164,7 @@
 		return;
 
 	NSDictionary *builtInDefaults = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Defaults" ofType:@"plist"]];
-	[[NSUserDefaults standardUserDefaults] setObject:[builtInDefaults objectForKey:@"CRDScreenResolutions"] forKey:@"CRDScreenResolutions"];
+	[[NSUserDefaults standardUserDefaults] setObject:builtInDefaults[@"CRDScreenResolutions"] forKey:@"CRDScreenResolutions"];
 }
 
 - (IBAction)addNewScreenResolution:(id)sender
@@ -174,14 +174,14 @@
 	
 	BOOL foundExistingEmptyRow = NO;
 	for (NSDictionary *value in [screenResolutionsController arrangedObjects])
-		if (![[value objectForKey:@"resolution"] length])
+		if (![value[@"resolution"] length])
 		{
-			foundExistingEmptyRow = [screenResolutionsController setSelectedObjects:[NSArray arrayWithObject:value]];
+			foundExistingEmptyRow = [screenResolutionsController setSelectedObjects:@[value]];
 			break;
 		}
 	
 	if (foundExistingEmptyRow)
-		[screenResolutionsTableView editSelectedRow:[NSNumber numberWithInteger:0]];
+		[screenResolutionsTableView editSelectedRow:@0];
 	else
 	{
 		[screenResolutionsController add:nil];
@@ -207,16 +207,16 @@
 	
 	BOOL foundExistingEmptyRow = NO;
 	for (NSDictionary *value in [forwardedPathsController arrangedObjects])
-		if (![[value objectForKey:@"label"] length])
+		if (![value[@"label"] length])
 		{
-			foundExistingEmptyRow = [forwardedPathsController setSelectedObjects:[NSArray arrayWithObject:value]];
+			foundExistingEmptyRow = [forwardedPathsController setSelectedObjects:@[value]];
 			break;
 		}
 	
 	if (foundExistingEmptyRow)
 	{	
-		[forwardedPathsTableView editSelectedRow:[NSNumber numberWithInteger:1]];
-		[[[forwardedPathsController selectedObjects] lastObject] setObject:[NSNumber numberWithBool:YES] forKey:@"enabled"];
+		[forwardedPathsTableView editSelectedRow:@1];
+		[[forwardedPathsController selectedObjects] lastObject][@"enabled"] = @YES;
 		[self addPathPanelOpen:sender];
 	}
 	else
@@ -249,7 +249,7 @@
 		if (result != NSOKButton)
 			return;
 		
-		NSString* path = [[[folderPanel URLs] objectAtIndex: 0] path];
+		NSString* path = [[folderPanel URLs][0] path];
 		[[forwardedPathsController selection] setValue:[path stringByExpandingTildeInPath] forKey:@"path"];
 		
 		if (![[forwardedPathsController selection] valueForKey:@"label"])
@@ -280,7 +280,7 @@
 		if (result != NSOKButton)
 			return;
 
-		NSURL* url = [[folderPanel URLs] objectAtIndex: 0];
+		NSURL* url = [folderPanel URLs][0];
 		
 		if (url != nil)
 			[[NSUserDefaults standardUserDefaults] setValue:[[url path] stringByExpandingTildeInPath] forKey:CRDSavedServersPath];

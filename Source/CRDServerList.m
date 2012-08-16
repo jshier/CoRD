@@ -103,7 +103,7 @@
 		[NSGraphicsContext restoreGraphicsState];	
 	}
 	
-	[[[[self tableColumns] objectAtIndex:0] dataCellForRow:rowIndex] setHighlighted:[self isRowSelected:rowIndex]];
+	[[[self tableColumns][0] dataCellForRow:rowIndex] setHighlighted:[self isRowSelected:rowIndex]];
 	
 	[super drawRow:rowIndex clipRect:clipRect];
 }
@@ -288,7 +288,7 @@
 	
 	if ((rowIndex != -1) && (autoexpansionCurrentRowOrigins != nil) && ([autoexpansionCurrentRowOrigins count] > rowIndex))
 	{
-		realRect.origin = [[autoexpansionCurrentRowOrigins objectAtIndex:rowIndex] pointValue];
+		realRect.origin = [autoexpansionCurrentRowOrigins[rowIndex] pointValue];
 	}
 	
 	return realRect;
@@ -409,8 +409,8 @@
 
 - (NSString *)pasteboardDataType:(NSPasteboard *)draggingPasteboard
 {
-	NSArray *supportedTypes = [NSArray arrayWithObjects:CRDRowIndexPboardType,
-			NSFilenamesPboardType, NSFilesPromisePboardType, nil];
+	NSArray *supportedTypes = @[CRDRowIndexPboardType,
+			NSFilenamesPboardType, NSFilesPromisePboardType];
 			
 	return [draggingPasteboard availableTypeFromArray:supportedTypes];
 }
@@ -604,7 +604,7 @@
 #pragma mark Internal use
 - (CRDServerCell *)cellForRow:(NSInteger)row
 {
-	return [[[self tableColumns] objectAtIndex:0] dataCellForRow:row];
+	return [[self tableColumns][0] dataCellForRow:row];
 
 }
 @end

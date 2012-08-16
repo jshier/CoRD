@@ -61,19 +61,15 @@ static NSColor *static_highlightedBoldColor, *static_normalBoldColor,
 	NSMutableParagraphStyle *truncatingParagraph = [[[NSParagraphStyle defaultParagraphStyle] mutableCopy] autorelease];
 	[truncatingParagraph setLineBreakMode:NSLineBreakByTruncatingTail];
 	
-	static_boldTextAttributes = [[NSDictionary dictionaryWithObjectsAndKeys:
-			[NSFont fontWithName:@"LucidaGrande-Bold" size:11.5], NSFontAttributeName,
-			truncatingParagraph, NSParagraphStyleAttributeName,
-			nil] retain];
+	static_boldTextAttributes = [@{NSFontAttributeName: [NSFont fontWithName:@"LucidaGrande-Bold" size:11.5],
+			NSParagraphStyleAttributeName: truncatingParagraph} retain];
 	
 	static_normalBoldColor = [NSColor controlTextColor];
 	static_highlightedBoldColor = [NSColor selectedControlTextColor];
 	
 	
-	static_regularTextAttributes = [[NSDictionary dictionaryWithObjectsAndKeys:
-			[NSFont fontWithName:@"LucidaGrande" size:10.5], NSFontAttributeName,
-			truncatingParagraph, NSParagraphStyleAttributeName, 
-			nil] retain];
+	static_regularTextAttributes = [@{NSFontAttributeName: [NSFont fontWithName:@"LucidaGrande" size:10.5],
+			NSParagraphStyleAttributeName: truncatingParagraph} retain];
 		
 	static_normalRegularColor = [[[NSColor textColor] colorWithAlphaComponent:0.75] retain];
 	static_highlightedRegularColor = [[[NSColor selectedTextColor] colorWithAlphaComponent:0.75] retain];
@@ -202,7 +198,7 @@ static NSColor *static_highlightedBoldColor, *static_normalBoldColor,
 	if ([inst hotkey] > -1) {
 		
 		// Set up badge string and size.
-		NSString *badge = [NSString stringWithFormat:@"%@%d", [NSString stringWithUTF8String:"\xE2\x8C\x98"], [inst hotkey]];
+		NSString *badge = [NSString stringWithFormat:@"%@%ld", @"\xE2\x8C\x98", [inst hotkey]];
 		NSSize badgeNumSize = [badge sizeWithAttributes:nil];
 		
 		// Calculate the badge's coordinates.

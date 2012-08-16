@@ -143,7 +143,7 @@ tcp_connect(RDConnectionRef conn, const char *server)
 	int timedOut = False;
 	time_t start = 0;
 	
-	CFHostRef remoteHost = CFHostCreateWithName(NULL, (CFStringRef)[NSString stringWithUTF8String:server]);
+	CFHostRef remoteHost = CFHostCreateWithName(NULL, (CFStringRef)@(server));
 	RDHostLookupInfo volatile *lookupInfo = calloc(1, sizeof(RDHostLookupInfo));
 	CFHostClientContext *clientContext = calloc(1, sizeof(CFHostClientContext));
 	CFStreamError *streamError = calloc(1, sizeof(CFStreamError));
@@ -161,13 +161,12 @@ tcp_connect(RDConnectionRef conn, const char *server)
 	}
 	
 	start = time(NULL);
-	NSAutoreleasePool *pool;
 	do
 	{
-		pool = [[NSAutoreleasePool alloc] init];
-		[[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-		timedOut = (time(NULL) - start > TIMEOUT_LENGTH);
-		[pool release];
+		@autoreleasepool {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+            timedOut = (time(NULL) - start > TIMEOUT_LENGTH);
+        }
 	} while (!lookupInfo->finished && !timedOut && (conn->errorCode == ConnectionErrorNone));
 			
 	if (timedOut)
@@ -183,7 +182,7 @@ tcp_connect(RDConnectionRef conn, const char *server)
 	else if (conn->errorCode != ConnectionErrorNone)
 		goto Cleanup;
 	
-	if ( !(host = [NSHost hostWithAddress:[NSString stringWithUTF8String:lookupInfo->address]]) )
+	if ( !(host = [NSHost hostWithAddress:@(lookupInfo->address)]) )
 	{
 		error("%s: Couldn't transform host address '%@' into NSHost", __FUNCTION__, lookupInfo->address);
 		conn->errorCode = ConnectionErrorHostResolution;

@@ -100,7 +100,7 @@
 	if (index >= (NSInteger)[self numberOfItems])
 		return nil;
 	
-	return [_items objectAtIndex:index];
+	return _items[index];
 }
 
 - (NSInteger)indexOfItem:(id)item

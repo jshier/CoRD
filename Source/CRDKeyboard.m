@@ -113,7 +113,7 @@ static NSDictionary *windowsKeymapTable = nil;
 
 - (void)sendKeycode:(uint8)keyCode modifiers:(uint16)rdflags pressed:(BOOL)down
 {
-	if ([virtualKeymap objectForKey:[NSNumber numberWithInt:keyCode]] == nil)
+	if (virtualKeymap[[NSNumber numberWithInt:keyCode]] == nil)
 		return;
 	
 	if (down)
@@ -289,7 +289,7 @@ static NSDictionary *windowsKeymapTable = nil;
 			[scanner scanHexInt:&i];
 			
 			if (i != 0 && n != nil)
-				[dict setObject:[NSNumber numberWithUnsignedInt:i] forKey:n];
+				dict[n] = @(i);
 		}
 		
 		windowsKeymapTable = [dict retain];
@@ -303,7 +303,7 @@ static NSDictionary *windowsKeymapTable = nil;
 	for (NSString *keymapName in windowsKeymapTable)
 		if ([[@"com.apple.keylayout." stringByAppendingString:keymapName] isEqualToString:keymapIdentifier])
 		{
-			windowsKeymap = [windowsKeymapTable objectForKey:keymapName];
+			windowsKeymap = windowsKeymapTable[keymapName];
 			break;
 		}
 			
@@ -311,12 +311,12 @@ static NSDictionary *windowsKeymapTable = nil;
 	if (!windowsKeymap)
 	{
 		NSArray *keymapNameComponents = [keymapIdentifier componentsSeparatedByString:@"."];
-		NSString *keymapName = [keymapNameComponents objectAtIndex:MIN(3,[keymapNameComponents count])];
+		NSString *keymapName = keymapNameComponents[MIN(3,[keymapNameComponents count])];
 				
 		for (NSString *potentialKeymapName in windowsKeymapTable)
 			if ([[keymapName commonPrefixWithString:potentialKeymapName options:NSCaseInsensitiveSearch] length] >= 4)
 			{ 
-				windowsKeymap = [windowsKeymapTable objectForKey:potentialKeymapName];
+				windowsKeymap = windowsKeymapTable[potentialKeymapName];
 				CRDLog(CRDLogLevelDebug, @"windowsKeymapForMacKeymap: substituting keymap '%@' for passed '%@', giving Windows keymap 0x%x", potentialKeymapName, keymapIdentifier, [windowsKeymap intValue]);
 				break;
 			}

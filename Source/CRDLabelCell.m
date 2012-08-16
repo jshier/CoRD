@@ -30,10 +30,8 @@ static NSDictionary *static_labelStyle;
 @implementation CRDLabelCell
 + (void)initialize
 {
-	static_labelStyle = [[NSDictionary dictionaryWithObjectsAndKeys:
-			TEXT_COLOR, NSForegroundColorAttributeName,
-			[NSFont fontWithName:@"LucidaGrande" size:TEXT_SIZE], NSFontAttributeName,
-			nil] retain];
+	static_labelStyle = [@{NSForegroundColorAttributeName: TEXT_COLOR,
+			NSFontAttributeName: [NSFont fontWithName:@"LucidaGrande" size:TEXT_SIZE]} retain];
 }
 
 - (NSRect)titleRectForBounds:(NSRect)bounds

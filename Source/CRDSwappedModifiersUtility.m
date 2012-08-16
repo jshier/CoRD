@@ -72,22 +72,18 @@ static NSArray *rawDefaultTable;
 	#define CREATE_KEY_FLAG(r, l, di) \
 		[NSDictionary dictionaryWithObjectsAndKeys:MakeNum(r), KeyFlagRight, MakeNum(l), KeyFlagLeft, MakeNum(di), KeyFlagDeviceIndependent, nil]
 		
-	keyFlagTable = [[NSDictionary dictionaryWithObjectsAndKeys:
-			CREATE_KEY_FLAG(0, 0, NSAlphaShiftKeyMask), MakeNum(CRDSwappedModifiersCapsLockKey),
-			CREATE_KEY_FLAG(NX_DEVICERCTLKEYMASK, NX_DEVICELCTLKEYMASK, NSControlKeyMask), MakeNum(CRDSwappedModifiersControlKey),
-			CREATE_KEY_FLAG(NX_DEVICERALTKEYMASK, NX_DEVICELALTKEYMASK, NSAlternateKeyMask), MakeNum(CRDSwappedModifiersOptionKey),
-			CREATE_KEY_FLAG(NX_DEVICERCMDKEYMASK, NX_DEVICELCMDKEYMASK, NSCommandKeyMask), MakeNum(CRDSwappedModifiersCommandKey),
-			CREATE_KEY_FLAG(NX_DEVICERSHIFTKEYMASK, NX_DEVICELSHIFTKEYMASK, NSShiftKeyMask), MakeNum(CRDSwappedModifiersShiftKey),
-			nil] retain];
+	keyFlagTable = [@{MakeNum(CRDSwappedModifiersCapsLockKey): CREATE_KEY_FLAG(0, 0, NSAlphaShiftKeyMask),
+			MakeNum(CRDSwappedModifiersControlKey): CREATE_KEY_FLAG(NX_DEVICERCTLKEYMASK, NX_DEVICELCTLKEYMASK, NSControlKeyMask),
+			MakeNum(CRDSwappedModifiersOptionKey): CREATE_KEY_FLAG(NX_DEVICERALTKEYMASK, NX_DEVICELALTKEYMASK, NSAlternateKeyMask),
+			MakeNum(CRDSwappedModifiersCommandKey): CREATE_KEY_FLAG(NX_DEVICERCMDKEYMASK, NX_DEVICELCMDKEYMASK, NSCommandKeyMask),
+			MakeNum(CRDSwappedModifiersShiftKey): CREATE_KEY_FLAG(NX_DEVICERSHIFTKEYMASK, NX_DEVICELSHIFTKEYMASK, NSShiftKeyMask)} retain];
 	
 	// Just for debug purposes
-	keyDisplayNames =  [[NSDictionary dictionaryWithObjectsAndKeys:
-			@"Caps Lock", MakeNum(CRDSwappedModifiersCapsLockKey),
-			@"Control", MakeNum(CRDSwappedModifiersControlKey),
-			@"Option", MakeNum(CRDSwappedModifiersOptionKey),
-			@"Command", MakeNum(CRDSwappedModifiersCommandKey),
-			@"Shift", MakeNum(CRDSwappedModifiersShiftKey),
-			nil] retain];
+	keyDisplayNames =  [@{MakeNum(CRDSwappedModifiersCapsLockKey): @"Caps Lock",
+			MakeNum(CRDSwappedModifiersControlKey): @"Control",
+			MakeNum(CRDSwappedModifiersOptionKey): @"Option",
+			MakeNum(CRDSwappedModifiersCommandKey): @"Command",
+			MakeNum(CRDSwappedModifiersShiftKey): @"Shift"} retain];
 		
 	// xxx: doesn't actually inform us of changes
 	[[NSUserDefaults standardUserDefaults] addObserver:[[[CRDSwappedModifiersUtility alloc] init] autorelease] forKeyPath:SwappedModifiersRootKey options:0 context:NULL];	
@@ -110,17 +106,17 @@ static NSArray *rawDefaultTable;
 		id item;
 		for ( item in rawDefaultTable )
 		{
-			[modifiersBuilder setObject:[item objectForKey:SwappedModifiersDestinationKey] forKey:[item objectForKey:SwappedModifiersSourceKey]];	
+			modifiersBuilder[item[SwappedModifiersSourceKey]] = item[SwappedModifiersDestinationKey];	
 		}
 	}
 	
 	if ([modifiersBuilder count] == 0)
 	{
-		[modifiersBuilder setObject:MakeNum(CRDSwappedModifiersCapsLockKey) forKey:MakeNum(CRDSwappedModifiersCapsLockKey)];
-		[modifiersBuilder setObject:MakeNum(CRDSwappedModifiersControlKey) forKey:MakeNum(CRDSwappedModifiersControlKey)];
-		[modifiersBuilder setObject:MakeNum(CRDSwappedModifiersOptionKey) forKey:MakeNum(CRDSwappedModifiersOptionKey)];
-		[modifiersBuilder setObject:MakeNum(CRDSwappedModifiersCommandKey) forKey:MakeNum(CRDSwappedModifiersCommandKey)];
-		[modifiersBuilder setObject:MakeNum(CRDSwappedModifiersShiftKey) forKey:MakeNum(CRDSwappedModifiersShiftKey)];
+		modifiersBuilder[MakeNum(CRDSwappedModifiersCapsLockKey)] = MakeNum(CRDSwappedModifiersCapsLockKey);
+		modifiersBuilder[MakeNum(CRDSwappedModifiersControlKey)] = MakeNum(CRDSwappedModifiersControlKey);
+		modifiersBuilder[MakeNum(CRDSwappedModifiersOptionKey)] = MakeNum(CRDSwappedModifiersOptionKey);
+		modifiersBuilder[MakeNum(CRDSwappedModifiersCommandKey)] = MakeNum(CRDSwappedModifiersCommandKey);
+		modifiersBuilder[MakeNum(CRDSwappedModifiersShiftKey)] = MakeNum(CRDSwappedModifiersShiftKey);
 	}
 	
 	[modifierTranslator release];

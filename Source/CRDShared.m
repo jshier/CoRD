@@ -73,7 +73,7 @@ NSString * const CRDSavedServersPath = @"savedServersPath";
 
 inline NSString * CRDJoinHostNameAndPort(NSString *host, NSInteger port)
 {
-	return (port && port != CRDDefaultPort) ? [NSString stringWithFormat:@"%@:%d", host, port] : [[host copy] autorelease];
+	return (port && port != CRDDefaultPort) ? [NSString stringWithFormat:@"%@:%ld", host, port] : [[host copy] autorelease];
 }
 
 void CRDSplitHostNameAndPort(NSString *address, NSString **host, NSInteger *port)
@@ -102,7 +102,7 @@ BOOL CRDResolutionStringIsFullscreen(NSString *screenResolution)
 {
 	screenResolution = [[screenResolution strip] lowercaseString];
 		
-	for (NSString *match in [NSArray arrayWithObjects:@"full screen", @"fullscreen", nil])
+	for (NSString *match in @[@"full screen", @"fullscreen"])
 		if ([screenResolution isEqualToString:match])
 			return YES;
 		
@@ -136,15 +136,15 @@ NSNumber * CRDNumberForColorsText(NSString *colorsText)
 	colorsText = [colorsText lowercaseString];
 	
 	if ([colorsText isLike:@"*256*"])
-		return [NSNumber numberWithInt:8];
+		return @8;
 	
 	if ([colorsText isLike:@"*thousand*"])
-		return [NSNumber numberWithInt:16];
+		return @16;
 	
 	if ([colorsText isLike:@"*million*"])
-		return [NSNumber numberWithInt:24];
+		return @24;
 	
-	return [NSNumber numberWithInt:16];
+	return @16;
 }
 
 inline unsigned int CRDRoundUpToEven(float n)
@@ -284,7 +284,7 @@ inline NSString *CRDTemporaryFile(void)
 	if (baseDir == nil)
 		baseDir = @"/tmp";
 		
-	return [baseDir stringByAppendingPathComponent:[NSString stringWithFormat:@"CoRD-TemporaryFile-%u-%u", time(NULL), rand()]];
+	return [baseDir stringByAppendingPathComponent:[NSString stringWithFormat:@"CoRD-TemporaryFile-%lu-%u", time(NULL), rand()]];
 }
 
 BOOL CRDPathIsHidden(NSString *path)
@@ -443,7 +443,7 @@ BOOL CRDLog(CRDLogLevel logLevel, NSString *format, ...)
 
 
 	if (!logFilePath)
-		logFilePath = [[[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"Logs/CoRD.log"] retain];
+		logFilePath = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:@"Logs/CoRD.log"] retain];
 
 	
 	if (forceLogToStdout || (![[NSFileManager defaultManager] fileExistsAtPath:logFilePath] && ![[NSFileManager defaultManager] createFileAtPath:logFilePath contents:nil attributes:nil]))

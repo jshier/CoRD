@@ -140,7 +140,7 @@ void PFMoveToApplicationsFolderIfNecessary()
 		// This is done so that the relaunched app opens as the front-most app.
 		int pid = [[NSProcessInfo processInfo] processIdentifier];
 		NSString *script = [NSString stringWithFormat:@"while [ `ps -p %d | wc -l` -gt 1 ]; do sleep 0.1; done; open '%@'", pid, destinationPath];
-		[NSTask launchedTaskWithLaunchPath:@"/bin/sh" arguments:[NSArray arrayWithObjects:@"-c", script, nil]];
+		[NSTask launchedTaskWithLaunchPath:@"/bin/sh" arguments:@[@"-c", script]];
 		[NSApp terminate:nil];
 	}
 	else {
@@ -183,7 +183,7 @@ static NSString *PreferredInstallLocation(BOOL *isUserDirectory)
 	NSArray *userApplicationsDirs = NSSearchPathForDirectoriesInDomains(NSApplicationDirectory, NSUserDomainMask, YES);
 
 	if ([userApplicationsDirs count] > 0) {
-		NSString *userApplicationsDir = [userApplicationsDirs objectAtIndex:0];
+		NSString *userApplicationsDir = userApplicationsDirs[0];
 		BOOL isDirectory;
 
 		if ([fm fileExistsAtPath:userApplicationsDir isDirectory:&isDirectory] && isDirectory) {
@@ -220,7 +220,7 @@ static BOOL Trash(NSString *path)
 	if ([[NSWorkspace sharedWorkspace] performFileOperation:NSWorkspaceRecycleOperation
 													 source:[path stringByDeletingLastPathComponent]
 												destination:@""
-													  files:[NSArray arrayWithObject:[path lastPathComponent]]
+													  files:@[[path lastPathComponent]]
 														tag:NULL]) {
 		return YES;
 	}

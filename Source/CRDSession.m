@@ -87,16 +87,16 @@
 	
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	
-	for (NSString *k in [NSArray arrayWithObjects:@"ConsoleSession", @"ForwardDisks", @"ForwardPrinters", @"DrawDesktop", @"WindowDrags", @"WindowAnimation", @"Themes", @"FontSmoothing", nil])
+	for (NSString *k in @[@"ConsoleSession", @"ForwardDisks", @"ForwardPrinters", @"DrawDesktop", @"WindowDrags", @"WindowAnimation", @"Themes", @"FontSmoothing"])
 	{
-		NSNumber *isChecked = [NSNumber numberWithBool:[[defaults valueForKey:[@"CRDBaseConnection" stringByAppendingString:k]] boolValue]];
+		NSNumber *isChecked = @([[defaults valueForKey:[@"CRDBaseConnection" stringByAppendingString:k]] boolValue]);
 		
 		[self setValue:isChecked forKey:[k lowercaseFirst]];
 	}
 	
 	[self setValue:CRDNumberForColorsText([defaults valueForKey:@"CRDBaseConnectionColors"]) forKey:@"screenDepth"];
 	
-	[self setValue:[NSNumber numberWithInt:[[defaults valueForKey:@"CRDBaseConnectionForwardAudio"] intValue]] forKey:@"forwardAudio"];
+	[self setValue:@([[defaults valueForKey:@"CRDBaseConnectionForwardAudio"] intValue]) forKey:@"forwardAudio"];
 		
 	NSString *resolutionString = [defaults valueForKey:@"CRDBaseConnectionScreenSize"];
 	fullscreen = CRDResolutionStringIsFullscreen(resolutionString);
@@ -110,7 +110,7 @@
 - (void)dealloc
 {
 	if (connectionStatus == CRDConnectionConnected)
-		[self disconnectAsync:[NSNumber numberWithBool:YES]];
+		[self disconnectAsync:@YES];
 			
 	while (connectionStatus != CRDConnectionClosed)
 		usleep(1000);
@@ -135,7 +135,7 @@
 
 - (id)valueForUndefinedKey:(NSString *)key
 {
-	return [otherAttributes objectForKey:key];
+	return otherAttributes[key];
 }
 
 - (void)setValue:(id)value forKey:(NSString *)key
@@ -269,7 +269,7 @@
 	}
 	
 	// Set status to connecting on main thread so that the cell's progress indicator timer is on the main thread
-	[self performSelectorOnMainThread:@selector(setStatusAsNumber:) withObject:[NSNumber numberWithInt:CRDConnectionConnecting] waitUntilDone:NO];
+	[self performSelectorOnMainThread:@selector(setStatusAsNumber:) withObject:@(CRDConnectionConnecting) waitUntilDone:NO];
 	
 	[g_appController performSelectorOnMainThread:@selector(validateControls) withObject:nil waitUntilDone:NO];
 
@@ -328,14 +328,14 @@
 				if (![[pair valueForKey:@"enabled"] boolValue])
 					continue;
 				
-				if (![[NSFileManager defaultManager] fileExistsAtPath:[[pair objectForKey:@"path"] stringByExpandingTildeInPath]] || ![[pair objectForKey:@"label"] length])
+				if (![[NSFileManager defaultManager] fileExistsAtPath:[pair[@"path"] stringByExpandingTildeInPath]] || ![pair[@"label"] length])
 				{
 					CRDLog(CRDLogLevelInfo, @"Empty custom forward label or path, skipping: %@", pair);
 					continue;
 				}
 				
-				[validDrives addObject:[[pair objectForKey:@"path"] stringByExpandingTildeInPath]];
-				[validNames addObject:[pair objectForKey:@"label"]];
+				[validDrives addObject:[pair[@"path"] stringByExpandingTildeInPath]];
+				[validNames addObject:pair[@"label"]];
 			}
 		} 
 		else 
@@ -397,7 +397,7 @@
 	else if (connectionStatus == CRDConnectionConnecting)
 	{
 		[self setStatus:CRDConnectionClosed];
-		[self performSelectorOnMainThread:@selector(setStatusAsNumber:) withObject:[NSNumber numberWithInt:CRDConnectionClosed] waitUntilDone:NO];
+		[self performSelectorOnMainThread:@selector(setStatusAsNumber:) withObject:@(CRDConnectionClosed) waitUntilDone:NO];
 	}
 	
 	return connected;
@@ -405,63 +405,61 @@
 
 - (void)disconnect
 {
-	[self disconnectAsync:[NSNumber numberWithBool:YES]];
+	[self disconnectAsync:@YES];
 }
 
 - (void)disconnectAsync:(NSNumber *)nonblocking
 {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-		
-	if (connectionStatus == CRDConnectionConnecting)
-		conn->errorCode = ConnectionErrorCanceled;
-	
-	[self setStatus:CRDConnectionDisconnecting];
-	if (connectionRunLoopFinished || ![nonblocking boolValue])
-	{
-		// Try to forcefully break the connection thread out of its run loop
-		@synchronized(self)
-		{
-			[inputEventPort sendBeforeDate:[NSDate dateWithTimeIntervalSinceNow:TIMEOUT_LENGTH] components:nil from:nil reserved:0];
-		}
-		
-		time_t start = time(NULL);
-		while (!connectionRunLoopFinished && (time(NULL) - start < TIMEOUT_LENGTH)) 
-			usleep(1000);
-
-		// UI cleanup
-		[self performSelectorOnMainThread:@selector(destroyUIElements) withObject:nil waitUntilDone:YES];
-
-		
-		// Clear out the bitmap cache
-		int i, k;
-		for (i = 0; i < BITMAP_CACHE_SIZE; i++)
-		{
-			for (k = 0; k < BITMAP_CACHE_ENTRIES; k++)
-			{	
-				ui_destroy_bitmap(conn->bmpcache[i][k].bitmap);
-				conn->bmpcache[i][k].bitmap = NULL;
-			}
-		}
-		
-		for (i = 0; i < CURSOR_CACHE_SIZE; i++)
-			ui_destroy_cursor(conn->cursorCache[i]);
-		
-		
-		free(conn->rdpdrClientname);
-		
-		
-		memset(conn, 0, sizeof(RDConnection));
-		free(conn);
-		conn = NULL;
-		
-		[self setStatus:CRDConnectionClosed];
-	}
-	else
-	{
-		[self performSelectorInBackground:@selector(disconnectAsync:) withObject:[NSNumber numberWithBool:NO]];
-	}
-	
-	[pool release];
+	@autoreleasepool {
+        if (connectionStatus == CRDConnectionConnecting)
+            conn->errorCode = ConnectionErrorCanceled;
+        
+        [self setStatus:CRDConnectionDisconnecting];
+        if (connectionRunLoopFinished || ![nonblocking boolValue])
+        {
+            // Try to forcefully break the connection thread out of its run loop
+            @synchronized(self)
+            {
+                [inputEventPort sendBeforeDate:[NSDate dateWithTimeIntervalSinceNow:TIMEOUT_LENGTH] components:nil from:nil reserved:0];
+            }
+            
+            time_t start = time(NULL);
+            while (!connectionRunLoopFinished && (time(NULL) - start < TIMEOUT_LENGTH))
+                usleep(1000);
+            
+            // UI cleanup
+            [self performSelectorOnMainThread:@selector(destroyUIElements) withObject:nil waitUntilDone:YES];
+            
+            
+            // Clear out the bitmap cache
+            int i, k;
+            for (i = 0; i < BITMAP_CACHE_SIZE; i++)
+            {
+                for (k = 0; k < BITMAP_CACHE_ENTRIES; k++)
+                {
+                    ui_destroy_bitmap(conn->bmpcache[i][k].bitmap);
+                    conn->bmpcache[i][k].bitmap = NULL;
+                }
+            }
+            
+            for (i = 0; i < CURSOR_CACHE_SIZE; i++)
+                ui_destroy_cursor(conn->cursorCache[i]);
+            
+            
+            free(conn->rdpdrClientname);
+            
+            
+            memset(conn, 0, sizeof(RDConnection));
+            free(conn);
+            conn = NULL;
+            
+            [self setStatus:CRDConnectionClosed];
+        }
+        else
+        {
+            [self performSelectorInBackground:@selector(disconnectAsync:) withObject:@NO];
+        }
+    }
 }
 
 #pragma mark -
@@ -469,25 +467,22 @@
 
 - (void)runConnectionRunLoop
 {
-	NSAutoreleasePool *pool = nil;
-	
-	connectionRunLoopFinished = NO;
-	
-	BOOL gotInput;
-	do
-	{
-		pool = [[NSAutoreleasePool alloc] init];
-		gotInput = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.25]];
-		[pool release];
-	} while (connectionStatus == CRDConnectionConnected && gotInput);
-	
-	pool = [[NSAutoreleasePool alloc] init];
-	
-	rdp_disconnect(conn);
-	[self discardConnectionThread];
-	connectionRunLoopFinished = YES;
+	@autoreleasepool {
+        connectionRunLoopFinished = NO;
+        
+        BOOL gotInput;
+        do
+        {
+            @autoreleasepool {
+                gotInput = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.25]];
+            }
+        } while (connectionStatus == CRDConnectionConnected && gotInput);
+                
+        rdp_disconnect(conn);
+        [self discardConnectionThread];
+        connectionRunLoopFinished = YES;
+    }
 
-	[pool release];
 }
 
 
@@ -511,7 +506,7 @@
 		return;
 		
 	NSPasteboard *pb = [NSPasteboard generalPasteboard];
-	if (![pb availableTypeFromArray:[NSArray arrayWithObject:NSStringPboardType]])
+	if (![pb availableTypeFromArray:@[NSStringPboardType]])
 		return;
 	
 	NSString *pasteContent = CRDConvertLineEndings([pb stringForType:NSStringPboardType], YES);
@@ -562,12 +557,12 @@
 - (void)gotNewRemoteClipboardData
 {
 	isClipboardOwner = YES;
-	[[NSPasteboard generalPasteboard] declareTypes:[NSArray arrayWithObject:NSStringPboardType] owner:self];
+	[[NSPasteboard generalPasteboard] declareTypes:@[NSStringPboardType] owner:self];
 }
 
 - (void)informServerOfPasteboardType
 {
-	if ([[NSPasteboard generalPasteboard] availableTypeFromArray:[NSArray arrayWithObject:NSStringPboardType]] == nil)
+	if ([[NSPasteboard generalPasteboard] availableTypeFromArray:@[NSStringPboardType]] == nil)
 		return;
 	
 	if (connectionStatus == CRDConnectionConnected)
@@ -587,7 +582,7 @@
 
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)atomicFlag updateFilenames:(BOOL)updateNamesFlag
 {
-	#define write_int(n, v)	 [outputBuffer appendString:[NSString stringWithFormat:@"%@:i:%d\r\n", (n), (v)]]
+	#define write_int(n, v)	 [outputBuffer appendString:[NSString stringWithFormat:@"%@:i:%ld\r\n", (n), (v)]]
 	#define write_string(n, v) [outputBuffer appendString:[NSString stringWithFormat:@"%@:s:%@\r\n", (n), (v) ? (v) : @""]]
 	
 	NSString *expandedPath = [path stringByExpandingTildeInPath];
@@ -597,20 +592,20 @@
 
 	NSMutableString *outputBuffer = [[NSMutableString alloc] init];
 	
-	write_int(@"connect to console", consoleSession);
-	write_int(@"redirectdrives", forwardDisks);
-	write_int(@"redirectprinters", forwardPrinters);
-	write_int(@"disable wallpaper", !drawDesktop);
-	write_int(@"disable full window drag", !windowDrags);
-	write_int(@"disable menu anims", !windowAnimation);
-	write_int(@"disable themes", !themes);
-	write_int(@"disable font smoothing", !fontSmoothing);
+	write_int(@"connect to console", (long)consoleSession);
+	write_int(@"redirectdrives", (long)forwardDisks);
+	write_int(@"redirectprinters", (long)forwardPrinters);
+	write_int(@"disable wallpaper", (long)!drawDesktop);
+	write_int(@"disable full window drag", (long)!windowDrags);
+	write_int(@"disable menu anims", (long)!windowAnimation);
+	write_int(@"disable themes", (long)!themes);
+	write_int(@"disable font smoothing", (long)!fontSmoothing);
 	write_int(@"audiomode", forwardAudio);
 	write_int(@"desktopwidth", screenWidth);
 	write_int(@"desktopheight", screenHeight);
 	write_int(@"session bpp", screenDepth);
-	write_int(@"cord save password", savePassword);
-	write_int(@"cord fullscreen", fullscreen);
+	write_int(@"cord save password", (long)savePassword);
+	write_int(@"cord fullscreen", (long)fullscreen);
 	write_int(@"cord row index", preferredRowIndex);
 	write_int(@"cord hotkey", hotkey);
 	write_int(@"cord displayMode", displayMode);
@@ -623,7 +618,7 @@
 	// Write all entries in otherAttributes	
 	for (NSString *key in otherAttributes)
 	{
-		id value = [otherAttributes objectForKey:key];
+		id value = otherAttributes[key];
 		if ([value isKindOfClass:[NSNumber class]])
 			write_int(key, [value integerValue]);
 		else
@@ -636,7 +631,7 @@
 	
 	if (writeToFileSucceeded)
 	{
-		NSDictionary *newAttrs = [NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedLong:'RDP '] forKey:NSFileHFSTypeCode];
+		NSDictionary *newAttrs = @{NSFileHFSTypeCode: [NSNumber numberWithUnsignedLong:'RDP ']};
         [[NSFileManager defaultManager] setAttributes:newAttrs ofItemAtPath:expandedPath error:NULL];
 	}
 	else
@@ -672,7 +667,7 @@
 		return [self performSelectorOnMainThread:@selector(updateCellData) withObject:nil waitUntilDone:NO];
 	
 	// Update the text
-	NSString *fullHost = (port && port != CRDDefaultPort) ? [NSString stringWithFormat:@"%@:%d", hostName, port] : hostName;
+	NSString *fullHost = (port && port != CRDDefaultPort) ? [NSString stringWithFormat:@"%@:%ld", hostName, port] : hostName;
 	[cellRepresentation setDisplayedText:label username:username address:fullHost];
 	
 	// Update the image
@@ -856,7 +851,7 @@
 	{
 		while ([inputEventStack count] != 0)
 		{
-			CRDInputEvent *ie = [[inputEventStack objectAtIndex:0] pointerValue];
+			CRDInputEvent *ie = [inputEventStack[0] pointerValue];
 			[inputEventStack removeObjectAtIndex:0];
 			if (ie != NULL)
 				[self sendInputOnConnectionThread:ie->time type:ie->type flags:ie->deviceFlags param1:ie->param1 param2:ie->param2];
@@ -1101,9 +1096,9 @@
 		else
 		{
 			if ([type isEqualToString:@"i"])
-				[otherAttributes setObject:[NSNumber numberWithInt:numVal] forKey:name];
+				otherAttributes[name] = @(numVal);
 			else
-				[otherAttributes setObject:value forKey:name];
+				otherAttributes[name] = value;
 		}
 	}
 		
@@ -1115,7 +1110,7 @@
 		const char *pass = keychain_get_password([hostName UTF8String], [username UTF8String]);
 		if (pass != NULL)
 		{
-			password = [[NSString stringWithUTF8String:pass] retain];
+			password = [@(pass) retain];
 			free((void*)pass);
 		}
 	}
@@ -1214,7 +1209,7 @@
 		{
 			while ([inputEventStack count] != 0)
 			{
-				free([[inputEventStack objectAtIndex:0] pointerValue]);
+				free([inputEventStack[0] pointerValue]);
 				[inputEventStack removeObjectAtIndex:0];
 			}
 		}

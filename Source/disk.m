@@ -1071,7 +1071,7 @@ disk_query_directory(RDConnectionRef conn, NTHandle handle, uint32 info_class, c
 
 			if (S_ISDIR(fstat.st_mode))
 				file_attributes |= FILE_ATTRIBUTE_DIRECTORY;
-			if (CRDPathIsHidden([NSString stringWithUTF8String:fullpath]))
+			if (CRDPathIsHidden(@(fullpath)))
 				file_attributes |= FILE_ATTRIBUTE_HIDDEN;
 			if (!file_attributes)
 				file_attributes |= FILE_ATTRIBUTE_NORMAL;

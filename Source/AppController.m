@@ -121,7 +121,7 @@
 	windowCascadePoint = CRDWindowCascadeStart;
 	
 	// Assure that the app support directory exists
-	NSString *appSupport = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+	NSString *appSupport = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES)[0];
 	
 	CRDCreateDirectory([appSupport stringByAppendingPathComponent:@"CoRD"]);
 	CRDCreateDirectory([AppController savedServersPath]);
@@ -148,7 +148,7 @@
 
 	
 	// Register for drag operations
-	NSArray *types = [NSArray arrayWithObjects:CRDRowIndexPboardType, NSFilenamesPboardType, NSFilesPromisePboardType, nil];
+	NSArray *types = @[CRDRowIndexPboardType, NSFilenamesPboardType, NSFilesPromisePboardType];
 	[gui_serverList registerForDraggedTypes:types];
 
 	// Custom interface settings not accessable from IB
@@ -175,24 +175,21 @@
     NSDictionary *arguments = [[NSUserDefaults standardUserDefaults] volatileDomainForName:NSArgumentDomain];
 	
 	// Try to emulate rdesktop's CLI args somewhat
-	NSDictionary *argumentToKeyPath = [NSDictionary dictionaryWithObjectsAndKeys:
-		@"hostName",     [NSArray arrayWithObjects:@"host", @"h", nil],
-		@"username",     [NSArray arrayWithObjects:@"username", @"u", nil],
-		@"port",         [NSArray arrayWithObjects:@"port", nil],
-		@"domain",       [NSArray arrayWithObjects:@"domain", @"d", nil],
-		@"password",     [NSArray arrayWithObjects:@"password", @"p", nil],
-		@"screenDepth",  [NSArray arrayWithObjects:@"bpp", @"a", nil],
+	NSDictionary *argumentToKeyPath = @{@[@"host", @"h"]: @"hostName",
+		@[@"username", @"u"]: @"username",
+		@[@"port"]: @"port",
+		@[@"domain", @"d"]: @"domain",
+		@[@"password", @"p"]: @"password",
+		@[@"bpp", @"a"]: @"screenDepth",
 		//@"fullscreen",   [NSArray arrayWithObjects:@"fullscreen", @"f", nil], //haven't gotten booleans to work yet
-		@"screenWidth",  [NSArray arrayWithObjects:@"width", nil],
-		@"screenHeight", [NSArray arrayWithObjects:@"height", nil],
-		//@"console",      [NSArray arrayWithObjects:@"console", @"admin", nil],
-		nil];
+		@[@"width"]: @"screenWidth",
+		@[@"height"]: @"screenHeight"};
 	
 	CRDSession *newInst = nil;
 	
-	if ([[arguments objectForKey:@"l"] length])
+	if ([arguments[@"l"] length])
 	{
-		NSString *labelMatch = [[arguments objectForKey:@"l"] lowercaseString];
+		NSString *labelMatch = [arguments[@"l"] lowercaseString];
 		
 		for (CRDSession *savedServer in savedServers)
 			if ([[savedServer.label lowercaseString] isLike:labelMatch])
@@ -211,21 +208,21 @@
 	{
 		newInst = [[[CRDSession alloc] initWithBaseConnection] autorelease];
 	
-		if ([arguments objectForKey:@"g"])
+		if (arguments[@"g"])
 		{
 			NSInteger w, h;
-			CRDSplitResolutionString([arguments objectForKey:@"g"], &w, &h);
-			[newInst setValue:[NSNumber numberWithInteger:w] forKey:@"screenWidth"];
-			[newInst setValue:[NSNumber numberWithInteger:h] forKey:@"screenHeight"];
+			CRDSplitResolutionString(arguments[@"g"], &w, &h);
+			[newInst setValue:@(w) forKey:@"screenWidth"];
+			[newInst setValue:@(h) forKey:@"screenHeight"];
 		}
 		
 		for (NSArray *argumentKeys in argumentToKeyPath)
 		{
-			NSString *instanceKeyPath = [argumentToKeyPath objectForKey:argumentKeys];
+			NSString *instanceKeyPath = argumentToKeyPath[argumentKeys];
 			
 			for (NSString *argumentKey in argumentKeys)
-				if ([arguments objectForKey:argumentKey])
-					[newInst setValue:[arguments objectForKey:argumentKey] forKey:instanceKeyPath];
+				if (arguments[argumentKey])
+					[newInst setValue:arguments[argumentKey] forKey:instanceKeyPath];
 		}
 		
 		if ([[newInst hostName] length] == 0)
@@ -594,7 +591,7 @@
 {
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setAllowsMultipleSelection:YES];
-	[panel setAllowedFileTypes:[NSArray arrayWithObjects:@"rdp", @"msrcincident", nil]];
+	[panel setAllowedFileTypes:@[@"rdp", @"msrcincident"]];
 	[panel runModal];
 	
 	NSMutableArray *filenames = [NSMutableArray array];
@@ -653,10 +650,8 @@
 	}
     
 	[gui_tabView enterFullScreenMode:[gui_unifiedWindow screen] withOptions:
-            [NSDictionary dictionaryWithObjectsAndKeys:
-            [NSNumber numberWithBool:NO], NSFullScreenModeAllScreens,
-            [NSNumber numberWithLong:(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)], NSFullScreenModeApplicationPresentationOptions,
-            nil]];
+            @{NSFullScreenModeAllScreens: @NO,
+            NSFullScreenModeApplicationPresentationOptions: [NSNumber numberWithLong:(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)]}];
 	
 	NSEnableScreenUpdates(); // Disable may have been used for slightly deferred fullscreen (see completeConnection:)
     [self setDisplayMode:CRDDisplayFullscreen];
@@ -759,7 +754,7 @@
 	if (inst == nil)
 		return;
 	
-	NSString *desktopFolder = [NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+	NSString *desktopFolder = NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES)[0];
 	
 	NSString *path = CRDFindAvailableFileName(desktopFolder, [[inst label] stringByAppendingString:NSLocalizedString(@" Screen Capture", @"File name for screen captures")], @".png");
 	
@@ -790,7 +785,7 @@
 	[newInst setValue:[NSNumber numberWithInt:port] forKey:@"port"];
 
 	if (isConsoleSession)
-		[newInst setValue:[NSNumber numberWithBool:isConsoleSession] forKey:@"consoleSession"];
+		[newInst setValue:@(isConsoleSession) forKey:@"consoleSession"];
 	
 	[connectedServers addObject:newInst];
 	[gui_serverList deselectAll:self];
@@ -828,7 +823,7 @@
 
 - (IBAction)clearQuickConnectHistory:(id)sender
 {
-	[userDefaults setObject:[NSArray array] forKey:CRDDefaultsQuickConnectServers];
+	[userDefaults setObject:@[] forKey:CRDDefaultsQuickConnectServers];
 }
 
 - (IBAction)helpForConnectionOptions:(id)sender
@@ -880,7 +875,7 @@
 	NSSavePanel *savePanel = [NSSavePanel savePanel];
 	[savePanel setTitle:NSLocalizedString(@"Save Server As", @"Save server dialog -> Title")];
 	
-	[savePanel setAllowedFileTypes:[NSArray arrayWithObject:@"rdp"]];
+	[savePanel setAllowedFileTypes:@[@"rdp"]];
 	[savePanel setCanSelectHiddenExtension:YES];
 	[savePanel setExtensionHidden:NO];
 	
@@ -932,12 +927,12 @@
 
 	if (![searchString length])
 	{
-		[self setValue:[NSNumber numberWithBool:NO]  forKey:@"isFilteringSavedServers"];
+		[self setValue:@NO  forKey:@"isFilteringSavedServers"];
 		[filteredServers removeAllObjects];
 	}
 	else
 	{
-		[self setValue:[NSNumber numberWithBool:YES] forKey:@"isFilteringSavedServers"];
+		[self setValue:@YES forKey:@"isFilteringSavedServers"];
 		[filteredServers removeAllObjects];
 		
 		NSString *searchCompareString = [NSString stringWithFormat:@"*%@*", [[searchString strip] lowercaseString]];
@@ -1064,7 +1059,7 @@
 
 - (BOOL)application:(NSApplication *)sender openFile:(NSString *)filename
 {
-	[self application:sender openFiles:[NSArray arrayWithObject:filename]];
+	[self application:sender openFiles:@[filename]];
 	return YES;
 }
 
@@ -1224,7 +1219,7 @@
 	if ([pbDataType isEqualToString:NSFilenamesPboardType])
 	{
 		NSArray *files = [[info draggingPasteboard] propertyListForType:NSFilenamesPboardType];
-		NSArray *rdpFiles = CRDFilterFilesByType(files, [NSArray arrayWithObject:@"rdp"]);
+		NSArray *rdpFiles = CRDFilterFilesByType(files, @[@"rdp"]);
 		return ([rdpFiles count] > 0) ? NSDragOperationCopy : NSDragOperationNone;
 	}
 	
@@ -1248,7 +1243,7 @@
 	{
 		// External drag, load all rdp files passed
 		NSArray *files = [[info draggingPasteboard] propertyListForType:NSFilenamesPboardType];
-		NSArray *rdpFiles = CRDFilterFilesByType(files, [NSArray arrayWithObject:@"rdp"]);
+		NSArray *rdpFiles = CRDFilterFilesByType(files, @[@"rdp"]);
 		
 		CRDSession *inst;
 		NSUInteger insertIndex = [savedServers indexOfObject:[self serverInstanceForRow:row]];
@@ -1290,8 +1285,8 @@
 	
 	int row = [rowIndexes firstIndex];
 	
-	[pboard declareTypes:[NSArray arrayWithObjects:CRDRowIndexPboardType, NSFilenamesPboardType, nil] owner:nil];
-	[pboard setPropertyList:[NSArray arrayWithObject:[inst filename]] forType:NSFilenamesPboardType];
+	[pboard declareTypes:@[CRDRowIndexPboardType, NSFilenamesPboardType] owner:nil];
+	[pboard setPropertyList:@[[inst filename]] forType:NSFilenamesPboardType];
 	[pboard setString:[NSString stringWithFormat:@"%d", row] forType:CRDRowIndexPboardType];
 
 	return YES;
@@ -1563,8 +1558,8 @@
 		
 	if ([[inst valueForKey:@"temporarilyFullscreen"] boolValue])
 	{
-		[inst setValue:[NSNumber numberWithBool:NO] forKey:@"fullscreen"];
-		[inst setValue:[NSNumber numberWithBool:NO] forKey:@"temporarilyFullscreen"];
+		[inst setValue:@NO forKey:@"fullscreen"];
+		[inst setValue:@NO forKey:@"temporarilyFullscreen"];
 	}
 	
 
@@ -1641,21 +1636,19 @@
 
 - (void)reconnectInstanceForEnteringFullscreen:(CRDSession*)inst
 {
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
-	CRDLog(CRDLogLevelInfo, @"Reconnecting for Full Screen...");
+    @autoreleasepool {
+        CRDLog(CRDLogLevelInfo, @"Reconnecting for Full Screen...");
 	
-	[self performSelectorOnMainThread:@selector(disconnectInstance:) withObject:inst waitUntilDone:YES];
+        [self performSelectorOnMainThread:@selector(disconnectInstance:) withObject:inst waitUntilDone:YES];
 
-	while ([inst status] != CRDConnectionClosed)
-		usleep(1000);
+        while ([inst status] != CRDConnectionClosed)
+            usleep(1000);
 
-	[inst setValue:[NSNumber numberWithBool:YES] forKey:@"fullscreen"];
-	[inst setValue:[NSNumber numberWithBool:YES] forKey:@"temporarilyFullscreen"];
+        [inst setValue:@YES forKey:@"fullscreen"];
+        [inst setValue:@YES forKey:@"temporarilyFullscreen"];
 	
-	[self performSelectorOnMainThread:@selector(connectInstance:) withObject:inst waitUntilDone:YES];
-
-	[pool release];	
+        [self performSelectorOnMainThread:@selector(connectInstance:) withObject:inst waitUntilDone:YES];
+    }
 }
 
 #pragma mark -
@@ -1701,7 +1694,7 @@
 		if ( (row <= 0) || (row > 1 + filteredCount) )
 			return nil;
 		if (row <= filteredCount)
-			return [filteredServers objectAtIndex:(row-1)];
+			return filteredServers[(row-1)];
 		
 		return nil;
 	}
@@ -1709,9 +1702,9 @@
 	if ( (row <= 0) || (row == 1+connectedCount) || (row > 1 + connectedCount + savedCount) )
 		return nil;
 	if (row <= connectedCount)
-		return [connectedServers objectAtIndex:row-1];
+		return connectedServers[row-1];
 	
-	return [savedServers objectAtIndex:row - connectedCount - 2];
+	return savedServers[row - connectedCount - 2];
 }
 
 - (void)openUrl:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)replyEvent
@@ -1811,8 +1804,8 @@
 {
 	if ([keyPath isEqualToString:@"label"])
 	{
-		NSString *newLabel = [change objectForKey:NSKeyValueChangeNewKey];
-		if ( ([newLabel length] > 0) && ![newLabel isEqual:[change objectForKey:NSKeyValueChangeOldKey]] && ![object isTemporary])
+		NSString *newLabel = change[NSKeyValueChangeNewKey];
+		if ( ([newLabel length] > 0) && ![newLabel isEqual:change[NSKeyValueChangeOldKey]] && ![object isTemporary])
 		{
 			NSString *newPath = CRDFindAvailableFileName([AppController savedServersPath], [newLabel stringByDeletingFileSystemCharacters], @".rdp");
 			
@@ -1874,7 +1867,7 @@
 	
 	for (inst in connectedServers)
 	{
-		menuItem = [[NSMenuItem alloc] initWithTitle:[inst label] action:@selector(performServerMenuItem:) keyEquivalent:[NSString stringWithFormat:@"%i", [inst hotkey]]];
+		menuItem = [[NSMenuItem alloc] initWithTitle:[inst label] action:@selector(performServerMenuItem:) keyEquivalent:[NSString stringWithFormat:@"%ld", [inst hotkey]]];
 		[menuItem setKeyEquivalentModifierMask:NSCommandKeyMask];
 		[menuItem setRepresentedObject:inst];
 		[gui_serversMenu addItem:menuItem];
@@ -1886,7 +1879,7 @@
 
 	for (inst in savedServers)
 	{
-		menuItem = [[NSMenuItem alloc] initWithTitle:[inst label] action:@selector(performServerMenuItem:) keyEquivalent:[NSString stringWithFormat:@"%i", [inst hotkey]]];
+		menuItem = [[NSMenuItem alloc] initWithTitle:[inst label] action:@selector(performServerMenuItem:) keyEquivalent:[NSString stringWithFormat:@"%ld", [inst hotkey]]];
 		[menuItem setKeyEquivalentModifierMask:NSCommandKeyMask];
 		[menuItem setRepresentedObject:inst];
 		[gui_serversMenu addItem:menuItem];
@@ -1952,17 +1945,17 @@
 
 - (void)parseUrlQueryString:(NSString *)queryString forSession:(CRDSession *)session
 {	
-	NSArray *booleanParamters = [NSArray arrayWithObjects:@"consoleSession",@"fullscreen",@"windowDrags",@"drawDesktop",@"windowAnimation",@"themes",@"fontSmoothing",@"savePassword",@"forwardDisks",@"forwardPrinters",nil];
-	NSArray *stringParameters = [NSArray arrayWithObjects:@"screenDepth",@"screenWidth",@"screenHeight",@"fowardAudio",@"label",nil];
+	NSArray *booleanParamters = @[@"consoleSession",@"fullscreen",@"windowDrags",@"drawDesktop",@"windowAnimation",@"themes",@"fontSmoothing",@"savePassword",@"forwardDisks",@"forwardPrinters"];
+	NSArray *stringParameters = @[@"screenDepth",@"screenWidth",@"screenHeight",@"fowardAudio",@"label"];
 	
 	for (id setting in [queryString componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"&:"]])
 	{
-		NSString *key = [[setting componentsSeparatedByString:@"="] objectAtIndex:0];
+		NSString *key = [setting componentsSeparatedByString:@"="][0];
 		
 		if ([stringParameters containsObject:key])
-			[session setValue:[[setting componentsSeparatedByString:@"="] objectAtIndex:1] forKey:key];
+			[session setValue:[setting componentsSeparatedByString:@"="][1] forKey:key];
 		else if ([booleanParamters containsObject:key])
-			[session setValue:[NSNumber numberWithInt:[[[setting componentsSeparatedByString:@"="] objectAtIndex:1] boolValue]] forKey:key];
+			[session setValue:[NSNumber numberWithInt:[[setting componentsSeparatedByString:@"="][1] boolValue]] forKey:key];
 		else
 			CRDLog(CRDLogLevelError, @"Invalid Parameter: %@", setting);
 	}
@@ -2015,13 +2008,13 @@
 		hotkey = [gui_hotkey indexOfSelectedItem];
 		[[gui_hotkey itemAtIndex:hotkey] setEnabled:NO];
 	}
-	[inst setValue:[NSNumber numberWithInteger:hotkey] forKey:@"hotkey"];
+	[inst setValue:@(hotkey) forKey:@"hotkey"];
 
 	// Audio Forwarding
 	if ([[gui_forwardAudio selectedCell] tag] >= 0  && [[gui_forwardAudio selectedCell] tag] < 3)
 		[inst setValue:[NSNumber numberWithInt:[[gui_forwardAudio selectedCell] tag]] forKey:@"forwardAudio"];
 	else
-		[inst setValue:[NSNumber numberWithInt:0] forKey:@"forwardAudio"];
+		[inst setValue:@0 forKey:@"forwardAudio"];
 
 	// Screen depth
 	[inst setValue:[NSNumber numberWithInt:([gui_colorCount indexOfSelectedItem]+1)*8] forKey:@"screenDepth"];
@@ -2031,7 +2024,7 @@
 	NSString *resolutionString = [[gui_screenResolution selectedItem] title];
 	BOOL isFullscreen = CRDResolutionStringIsFullscreen(resolutionString);
 	
-	[inst setValue:[NSNumber numberWithBool:isFullscreen] forKey:@"fullscreen"];
+	[inst setValue:@(isFullscreen) forKey:@"fullscreen"];
 
 	if (!isFullscreen)
 		CRDSplitResolutionString(resolutionString, &width, &height);
@@ -2115,7 +2108,7 @@
 			screenHeight = CRDDefaultScreenHeight;
 		}
 		// If the user opens an .rdc file with a resolution that the user doesn't have, nothing will be selected. We're not adding it to the array controller, because we don't want resolutions from .rdc files to be persistent in CoRD prefs
-		NSString *resolutionLabel = [NSString stringWithFormat:@"%dx%d", screenWidth, screenHeight];
+		NSString *resolutionLabel = [NSString stringWithFormat:@"%ldx%ld", screenWidth, screenHeight];
 		[gui_screenResolution selectItemWithTitle:resolutionLabel];
 	}
 	
@@ -2139,26 +2132,24 @@
 // Should only be called by connectInstance in the connection thread
 - (void)connectAsync:(CRDSession *)inst
 {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	@autoreleasepool {
+        if ([[inst valueForKey:@"fullscreen"] boolValue])
+        {
+            NSSize screenSize = [[gui_unifiedWindow screen] frame].size;
+            [inst setValue:@((NSInteger)screenSize.width) forKey:@"screenWidth"];
+            [inst setValue:@((NSInteger)screenSize.height) forKey:@"screenHeight"];
+        }
 	
-	if ([[inst valueForKey:@"fullscreen"] boolValue])
-	{
-		NSSize screenSize = [[gui_unifiedWindow screen] frame].size;
-		[inst setValue:[NSNumber numberWithInteger:(NSInteger)screenSize.width] forKey:@"screenWidth"];
-		[inst setValue:[NSNumber numberWithInteger:(NSInteger)screenSize.height] forKey:@"screenHeight"];
-	}
+        BOOL connected = [inst connect];
 	
-	BOOL connected = [inst connect];
-	
-	[self performSelectorOnMainThread:@selector(completeConnection:) withObject:inst waitUntilDone:NO];
+        [self performSelectorOnMainThread:@selector(completeConnection:) withObject:inst waitUntilDone:NO];
 					
-	if (connected)	
-		[inst runConnectionRunLoop]; // this will block until the session is finished
+        if (connected)
+            [inst runConnectionRunLoop]; // this will block until the session is finished
 		
-	if ([inst status] == CRDConnectionConnected)
-		[self performSelectorOnMainThread:@selector(disconnectInstance:) withObject:inst waitUntilDone:YES];
-	
-	[pool release];
+        if ([inst status] == CRDConnectionConnected)
+            [self performSelectorOnMainThread:@selector(disconnectInstance:) withObject:inst waitUntilDone:YES];
+	}
 }
 
 // Called in main thread by connectAsync
@@ -2462,11 +2453,9 @@
 
 - (void)sortSavedServersAlphabetically
 {
-	NSArray *sortDescriptors = [NSArray arrayWithObjects:
-			[[[NSSortDescriptor alloc] initWithKey:@"label" ascending:YES] autorelease],
+	NSArray *sortDescriptors = @[[[[NSSortDescriptor alloc] initWithKey:@"label" ascending:YES] autorelease],
 			[[[NSSortDescriptor alloc] initWithKey:@"hostName" ascending:YES] autorelease],
-			[[[NSSortDescriptor alloc] initWithKey:@"username" ascending:YES] autorelease],
-			nil];
+			[[[NSSortDescriptor alloc] initWithKey:@"username" ascending:YES] autorelease]];
 	[savedServers sortUsingDescriptors:sortDescriptors];
 }
 
@@ -2489,7 +2478,7 @@
 	s_savedServersPath = [[[NSUserDefaults standardUserDefaults] objectForKey:CRDSavedServersPath] stringByExpandingTildeInPath];
 
 	if (s_savedServersPath == nil)
-		s_savedServersPath = [[[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"CoRD/Servers"] retain];
+		s_savedServersPath = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:@"CoRD/Servers"] retain];
 	
 	return s_savedServersPath;
 }
