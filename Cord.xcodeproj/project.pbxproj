@@ -749,13 +749,10 @@
 				FRAMEWORK_SEARCH_PATHS_QUOTED_4 = "\"$(SRCROOT)/Source\"";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_DYNAMIC_NO_PIC = YES;
 				GCC_ENABLE_ASM_KEYWORD = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_ENABLE_SSE3_EXTENSIONS = YES;
-				GCC_FAST_OBJC_DISPATCH = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_INPUT_FILETYPE = sourcecode.c.objc;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -785,11 +782,10 @@
 					"\"$(SRCROOT)/Resources\"",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.6.8;
-				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-fnested-functions";
 				OTHER_LDFLAGS = "-lmycrypto";
 				PRODUCT_NAME = Cord;
-				VALID_ARCHS = "i386 x86_64";
+				VALID_ARCHS = x86_64;
 				VERSIONING_SYSTEM = "";
 				WRAPPER_EXTENSION = app;
 			};
@@ -815,16 +811,12 @@
 				FRAMEWORK_SEARCH_PATHS_QUOTED_2 = "\"$(SRCROOT)/Source\"";
 				FRAMEWORK_SEARCH_PATHS_QUOTED_3 = "\"$(SRCROOT)/Source\"";
 				FRAMEWORK_SEARCH_PATHS_QUOTED_4 = "\"$(SRCROOT)/Source\"";
-				GCC_AUTO_VECTORIZATION = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_DYNAMIC_NO_PIC = YES;
 				GCC_ENABLE_ASM_KEYWORD = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_ENABLE_SSE3_EXTENSIONS = YES;
-				GCC_ENABLE_SYMBOL_SEPARATION = NO;
-				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INPUT_FILETYPE = sourcecode.c.objc;
 				GCC_OPTIMIZATION_LEVEL = s;
@@ -855,14 +847,13 @@
 					"\"$(SRCROOT)/Resources\"",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.6.8;
-				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "-fnested-functions";
 				OTHER_LDFLAGS = "-lmycrypto";
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = NO;
 				PRODUCT_NAME = CoRD;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
-				VALID_ARCHS = "i386 x86_64";
+				VALID_ARCHS = x86_64;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
@@ -880,6 +871,14 @@
 				PROVISIONING_PROFILE = "";
 				SDKROOT = macosx;
 				VALID_ARCHS = x86_64;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-Wno-unused-parameter",
+					"-Wno-unused-variable",
+					"-Wno-unused-value",
+					"-Wno-sign-compare",
+				);
 			};
 			name = Debug;
 		};
@@ -895,6 +894,14 @@
 				PROVISIONING_PROFILE = "";
 				SDKROOT = macosx;
 				VALID_ARCHS = x86_64;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-Wno-unused-parameter",
+					"-Wno-unused-variable",
+					"-Wno-unused-value",
+					"-Wno-sign-compare",
+				);
 			};
 			name = Release;
 		};
