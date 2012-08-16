@@ -116,7 +116,6 @@
 // Accessors
 - (NSView *)tabItemView;
 - (NSString *)filename;
-- (void)setFilename:(NSString *)path;
 - (void)setIsTemporary:(BOOL)temp;
 - (void)setHostName:(NSString *)newHost;
 - (void)setUsername:(NSString *)s;

@@ -525,7 +525,7 @@
 	[self releaseBackingStore];
 }
 
-- (void)drawGlyph:(CRDBitmap *)glyph at:(NSRect)r foregroundColor:(NSColor *)foregroundColor;
+- (void)drawGlyph:(CRDBitmap *)glyph at:(NSRect)r foregroundColor:(NSColor *)foregroundColor
 {
 	// Assumes that focusBackingStore has already been called (for efficiency)
 	

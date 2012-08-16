@@ -399,7 +399,7 @@
 	[super draggedImage:anImage endedAt:aPoint operation:operation];
 }
 
-- (NSDragOperation)draggingSourceOperationMaskForLocal:(BOOL)flag;
+- (NSDragOperation)draggingSourceOperationMaskForLocal:(BOOL)flag
 {
 	return flag ? NSDragOperationMove : NSDragOperationCopy;
 }
