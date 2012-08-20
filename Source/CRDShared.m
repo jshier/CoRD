@@ -67,6 +67,9 @@ NSString * const CRDSetServerKeyboardLayout = @"CRDSetServerKeyboardLayout";
 NSString * const CRDForwardOnlyDefinedPaths = @"CRDForwardOnlyDefinedPaths";
 NSString * const CRDUseSocksProxy = @"CRDUseSocksProxy";
 NSString * const CRDSavedServersPath = @"savedServersPath";
+NSString * const CRDDefaultUserName = @"defaultUserName";
+NSString * const CRDDefaultUserPassword = @"defaultUserPassword";
+NSString * const CRDDefalutDomain = @"defaultDomain";
 
 #pragma mark -
 #pragma mark General purpose routines

@@ -18,6 +18,7 @@
 #import "PreferencesController.h"
 #import "AppController.h"
 #import "CRDShared.h"
+#import "keychain.h"
 
 #define CRDPreferencesGeneralTabTag 0
 #define CRDPreferencesConnectionTabTag 1
@@ -33,8 +34,14 @@
 	[screenResolutionsController setSortDescriptors:@[[[[NSSortDescriptor alloc] initWithKey:@"resolution" ascending:YES selector:@selector(compareScreenResolution:)] autorelease]]];
 	[screenResolutionsController addObserver:self forKeyPath:@"sortDescriptors" options:0 context:NULL];
 	[self changePanes:[toolbar items][0]];
+    passwordTextField.stringValue = [NSString stringWithUTF8String:keychain_get_default_password()];
 	
 	[savedServersPathControl registerForDraggedTypes:@[NSFilenamesPboardType]];
+}
+
+- (IBAction)defaultPasswordChanged:(NSSecureTextField *)sender
+{
+    keychain_update_default_password([[sender stringValue] UTF8String]);
 }
 
 - (IBAction)changePanes:(id)sender

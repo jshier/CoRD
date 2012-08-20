@@ -23,6 +23,7 @@
 	IBOutlet NSWindow *preferencesWindow;
 	IBOutlet NSToolbar *toolbar;
 	
+    IBOutlet NSSecureTextField *passwordTextField;
 	NSUserDefaults *userDefaults;
 	
 	IBOutlet NSArrayController *screenResolutionsController;
@@ -34,6 +35,7 @@
 	IBOutlet NSPathControl *savedServersPathControl;
 }
 
+- (IBAction)defaultPasswordChanged:(NSSecureTextField *)sender;
 
 - (IBAction)changePanes:(id)sender;
 - (IBAction)sparkleTypeChanged:(id)sender;

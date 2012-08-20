@@ -57,7 +57,7 @@
 	NSScrollView *scrollEnclosure;
 }
 
-@property (copy,nonatomic) NSString *hostName, *label, *clientHostname;
+@property (copy,nonatomic) NSString *hostName, *label, *clientHostname, *username, *password, *domain;
 @property (readonly) RDConnectionRef conn;
 @property (readonly) CRDSessionView *view;
 @property (assign,nonatomic) BOOL isTemporary;

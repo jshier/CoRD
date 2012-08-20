@@ -18,5 +18,7 @@
 void keychain_update_password(const char *origServer, const char *origUser, 
 		const char *server, const char *username, const char *password);
 const char *keychain_get_password(const char *server, const char *username);
+const char *keychain_get_default_password(void);
+void keychain_update_default_password(const char *password);
 void keychain_save_password(const char *server, const char *username, const char *password);
 void keychain_clear_password(const char *server, const char *username);

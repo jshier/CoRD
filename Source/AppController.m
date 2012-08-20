@@ -780,9 +780,15 @@
 	
 	CRDSession *newInst = [[[CRDSession alloc] initWithBaseConnection] autorelease];
 	
+//    newInst.label = hostname;
+//    newInst.hostName = hostname;
+//    newInst.port = port;
 	[newInst setValue:hostname forKey:@"label"];
 	[newInst setValue:hostname forKey:@"hostName"];
 	[newInst setValue:[NSNumber numberWithInt:port] forKey:@"port"];
+    newInst.username = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultUserName"];
+    newInst.password = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultUserPassword"];
+    newInst.domain = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultDomain"];
 
 	if (isConsoleSession)
 		[newInst setValue:@(isConsoleSession) forKey:@"consoleSession"];

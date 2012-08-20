@@ -119,7 +119,18 @@ void keychain_update_password(const char *origServer, const char *origUser, cons
 	free((void*)server);
 }
 
+void keychain_update_default_password(const char *password)
+{
+    SecKeychainAddGenericPassword(NULL, 22, "CoRD: Default Password", 16, "Default Username", strlen(password), password, NULL);
+}
 
+const char *keychain_get_default_password(void)
+{
+    char *password;
+    UInt32 passwordLength;
+    SecKeychainFindGenericPassword(NULL, 22, "CoRD: Default Password", 16, "Default Username", &passwordLength, (void **)&password, NULL);
+    return password;
+}
 void keychain_save_password(const char *server, const char *username, const char *password)
 {
 	keychain_update_password(server, username, server, username, password);

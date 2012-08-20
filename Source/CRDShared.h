@@ -172,6 +172,9 @@ extern NSString * const CRDSetServerKeyboardLayout;
 extern NSString * const CRDForwardOnlyDefinedPaths;
 extern NSString * const CRDUseSocksProxy;
 extern NSString * const CRDSavedServersPath;
+extern NSString * const CRDDefaultUserName;
+extern NSString * const CRDDefaultUserPassword;
+extern NSString * const CDDDefaultDomain;
 
 // Notifications
 extern NSString * const CRDMinimalViewDidChangeNotification;

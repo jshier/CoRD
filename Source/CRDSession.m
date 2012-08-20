@@ -896,7 +896,7 @@
 #pragma mark -
 #pragma mark Accessors
 
-@synthesize hostName, label, clientHostname, conn, view, isTemporary, modified, cellRepresentation, status=connectionStatus, window, hotkey, forwardAudio, displayMode;
+@synthesize hostName, label, clientHostname, conn, view, isTemporary, modified, cellRepresentation, status=connectionStatus, window, hotkey, forwardAudio, displayMode, username, password, domain;
 
 - (NSView *)tabItemView
 {
