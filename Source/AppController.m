@@ -681,6 +681,7 @@
 	
 	[[gui_unifiedWindow contentView] addSubview:gui_tabView];	
 	[gui_unifiedWindow display];
+	gui_unifiedWindow.delegate = self;
 	
 	if (displayModeBeforeFullscreen == CRDDisplayWindowed)
 		[self startWindowed:self];
