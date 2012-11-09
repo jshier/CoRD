@@ -651,10 +651,8 @@
 	[gui_tabView enterFullScreenMode:[gui_unifiedWindow screen] withOptions:
             @{NSFullScreenModeAllScreens: @NO,
             NSFullScreenModeApplicationPresentationOptions: [NSNumber numberWithLong:(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)]}];
-            [NSDictionary dictionaryWithObjectsAndKeys:
-            [NSNumber numberWithBool:NO], NSFullScreenModeAllScreens,
-            [NSNumber numberWithLong:(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)], NSFullScreenModeApplicationPresentationOptions,
-            nil]];
+            @{NSFullScreenModeAllScreens: @NO,
+            NSFullScreenModeApplicationPresentationOptions: [NSNumber numberWithLong:(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)]};
 
 	gui_tabView.window.delegate = self;
 	[[gui_tabView window] setAcceptsMouseMovedEvents:YES];
