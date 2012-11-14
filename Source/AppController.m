@@ -350,7 +350,7 @@
 	
 	[self addSavedServer:inst];
 	
-	[inst setValue:[NSNumber numberWithInt:[savedServers indexOfObjectIdenticalTo:inst]] forKey:@"preferredRowIndex"];
+	[inst setValue:@([savedServers indexOfObjectIdenticalTo:inst]) forKey:@"preferredRowIndex"];
 	
 	if (![gui_inspector isVisible])
 		[self toggleInspector:nil];
@@ -650,9 +650,9 @@
 	}
 	[gui_tabView enterFullScreenMode:[gui_unifiedWindow screen] withOptions:
             @{NSFullScreenModeAllScreens: @NO,
-            NSFullScreenModeApplicationPresentationOptions: [NSNumber numberWithLong:(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)]}];
+            NSFullScreenModeApplicationPresentationOptions: @(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)}];
             @{NSFullScreenModeAllScreens: @NO,
-            NSFullScreenModeApplicationPresentationOptions: [NSNumber numberWithLong:(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)]};
+            NSFullScreenModeApplicationPresentationOptions: @((NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar))};
 
 	gui_tabView.window.delegate = self;
 	[[gui_tabView window] setAcceptsMouseMovedEvents:YES];
@@ -792,7 +792,7 @@
 //    newInst.port = port;
 	[newInst setValue:hostname forKey:@"label"];
 	[newInst setValue:hostname forKey:@"hostName"];
-	[newInst setValue:[NSNumber numberWithInt:port] forKey:@"port"];
+	[newInst setValue:@(port) forKey:@"port"];
     newInst.username = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultUserName"];
     newInst.password = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultUserPassword"];
     newInst.domain = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultDomain"];
@@ -1677,7 +1677,7 @@
 	
 	dumpedInstanceWasSelected = [self selectedServer] == inst;
 	dumpedInstance = [inst retain];
-	[inst setValue:[NSNumber numberWithInt:index] forKey:@"preferredRowIndex"];
+	[inst setValue:@(index) forKey:@"preferredRowIndex"];
 	
 	[savedServers removeObject:inst];
 }
@@ -1686,7 +1686,7 @@
 {
 	NSUInteger index = (intoRow == -1) ? [[dumpedInstance valueForKey:@"preferredRowIndex"] intValue] : (intoRow - 2 - [connectedServers count]);
 	[self addSavedServer:dumpedInstance atIndex:index select:dumpedInstanceWasSelected];
-	[dumpedInstance setValue:[NSNumber numberWithInt:index] forKey:@"preferredRowIndex"];
+	[dumpedInstance setValue:@(index) forKey:@"preferredRowIndex"];
 }
 
 #pragma mark -
@@ -1968,7 +1968,7 @@
 		if ([stringParameters containsObject:key])
 			[session setValue:[setting componentsSeparatedByString:@"="][1] forKey:key];
 		else if ([booleanParamters containsObject:key])
-			[session setValue:[NSNumber numberWithInt:[[setting componentsSeparatedByString:@"="][1] boolValue]] forKey:key];
+			[session setValue:@([[setting componentsSeparatedByString:@"="][1] boolValue]) forKey:key];
 		else
 			CRDLog(CRDLogLevelError, @"Invalid Parameter: %@", setting);
 	}
@@ -2009,7 +2009,7 @@
 	NSInteger port;
 	NSString *s;
 	CRDSplitHostNameAndPort([gui_host stringValue], &s, &port);
-	[inst setValue:[NSNumber numberWithInt:port] forKey:@"port"];
+	[inst setValue:@(port) forKey:@"port"];
 	[inst setValue:s forKey:@"hostName"];
 	
 	// Hotkey
@@ -2025,12 +2025,12 @@
 
 	// Audio Forwarding
 	if ([[gui_forwardAudio selectedCell] tag] >= 0  && [[gui_forwardAudio selectedCell] tag] < 3)
-		[inst setValue:[NSNumber numberWithInt:[[gui_forwardAudio selectedCell] tag]] forKey:@"forwardAudio"];
+		[inst setValue:@([[gui_forwardAudio selectedCell] tag]) forKey:@"forwardAudio"];
 	else
 		[inst setValue:@0 forKey:@"forwardAudio"];
 
 	// Screen depth
-	[inst setValue:[NSNumber numberWithInt:([gui_colorCount indexOfSelectedItem]+1)*8] forKey:@"screenDepth"];
+	[inst setValue:@(([gui_colorCount indexOfSelectedItem] +1 ) * 8) forKey:@"screenDepth"];
 			
 	// Screen resolution
 	NSInteger width = 0, height = 0;
@@ -2042,8 +2042,8 @@
 	if (!isFullscreen)
 		CRDSplitResolutionString(resolutionString, &width, &height);
 	
-	[inst setValue:[NSNumber numberWithInt:width] forKey:@"screenWidth"];
-	[inst setValue:[NSNumber numberWithInt:height] forKey:@"screenHeight"];
+	[inst setValue:@(width) forKey:@"screenWidth"];
+	[inst setValue:@(height) forKey:@"screenHeight"];
 	
 	[self saveInspectedServer];
 	
@@ -2475,7 +2475,7 @@
 - (void)storeSavedServerPositions
 {
 	for (CRDSession *inst in savedServers) 
-		[inst setValue:[NSNumber numberWithInt:[savedServers indexOfObject:inst]] forKey:@"preferredRowIndex"];	
+		[inst setValue:@([savedServers indexOfObject:inst]) forKey:@"preferredRowIndex"];
 }
 
 @end

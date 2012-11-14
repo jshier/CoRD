@@ -631,7 +631,7 @@
 	
 	if (writeToFileSucceeded)
 	{
-		NSDictionary *newAttrs = @{NSFileHFSTypeCode: [NSNumber numberWithUnsignedLong:'RDP ']};
+		NSDictionary *newAttrs = @{NSFileHFSTypeCode:@('RDP ')};
         [[NSFileManager defaultManager] setAttributes:newAttrs ofItemAtPath:expandedPath error:NULL];
 	}
 	else

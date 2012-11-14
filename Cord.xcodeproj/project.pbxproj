@@ -643,7 +643,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${TARGET_BUILD_DIR}/${EXECUTABLE_FOLDER_PATH}\"\ninstall_name_tool -change \"/usr/lib/libcrypto.0.9.8.dylib\" \"/usr/lib/libcrypto.dylib\" \"CoRD\"\n\n\n\n\n";
+			shellScript = "cd \"${TARGET_BUILD_DIR}/${EXECUTABLE_FOLDER_PATH}\"\ninstall_name_tool -change \"/usr/lib/libcrypto.0.9.8.dylib\" \"/usr/lib/libcrypto.dylib\" \"Cord\"\n\n\n\n\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

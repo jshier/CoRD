@@ -258,7 +258,7 @@ void ui_desktop_save(RDConnectionRef conn, uint32 offset, int x, int y, int w, i
 				}
 				
 				o[0] = bestIndex;
-				memoizedColors[@(searchColor)] = [NSNumber numberWithUnsignedChar:bestIndex];		
+				memoizedColors[@(searchColor)] = @(bestIndex);
 			}
 
 			p += 4;
