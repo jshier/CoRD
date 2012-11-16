@@ -27,7 +27,6 @@
 @interface CRDSession : NSObject <NSMachPortDelegate, NSStreamDelegate, NSWindowDelegate>
 {
 	// User configurable RDP settings
-	NSString *username, *password, *domain;	
 	BOOL savePassword, forwardDisks, forwardPrinters, drawDesktop, windowDrags, windowAnimation, themes, fontSmoothing, consoleSession, fullscreen;
 	NSInteger port;
 	NSInteger screenDepth, screenWidth, screenHeight;

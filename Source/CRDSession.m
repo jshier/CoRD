@@ -44,18 +44,18 @@
 	if (!(self = [super init]))
 		return nil;
 	
-	rdpFilename = label = hostName = clientHostname = username = password = domain = @"";
+	rdpFilename = _label = _hostName = _clientHostname = _username = _password = _domain = @"";
 	preferredRowIndex = -1;
 	screenDepth = 16;
-	isTemporary = themes = YES;
-	hotkey = -1;
-	forwardAudio = CRDDisableAudio;
+	_isTemporary = themes = YES;
+	_hotkey = -1;
+	_forwardAudio = CRDDisableAudio;
 	fileEncoding = NSUTF8StringEncoding;
 	
 	// Other initialization
 	otherAttributes = [[NSMutableDictionary alloc] init];
 	
-	cellRepresentation = [[CRDServerCell alloc] init];
+	_cellRepresentation = [[CRDServerCell alloc] init];
 	inputEventStack = [[NSMutableArray alloc] init];
 	
 	[self setStatus:CRDConnectionClosed];
@@ -109,27 +109,27 @@
 
 - (void)dealloc
 {
-	if (connectionStatus == CRDConnectionConnected)
+	if (_connectionStatus == CRDConnectionConnected)
 		[self disconnectAsync:@YES];
 			
-	while (connectionStatus != CRDConnectionClosed)
+	while (_connectionStatus != CRDConnectionClosed)
 		usleep(1000);
 	
 	[inputEventPort invalidate];
 	[inputEventPort release];
 	[inputEventStack release];
 	
-	[label release];
-	[hostName release];
-	[clientHostname release];
-	[username release];
-	[password release];
-	[domain release];
+	[_label release];
+	[_hostName release];
+	[_clientHostname release];
+	[_username release];
+	[_password release];
+	[_domain release];
 	[otherAttributes release];
 	[rdpFilename release];
 	
 		
-	[cellRepresentation release];
+	[_cellRepresentation release];
 	[super dealloc];
 }
 
@@ -142,7 +142,7 @@
 {
 	if (![[self valueForKey:key] isEqualTo:value])
 	{
-		modified |= ![key isEqualToString:@"view"];
+		_modified |= ![key isEqualToString:@"view"];
 		[super setValue:value forKey:key];
 	}
 }
@@ -151,15 +151,15 @@
 {
 	CRDSession *newSession = [[CRDSession alloc] init];
 	
-	newSession->label = [label copy];
-	newSession->hostName = [hostName copy];
-	newSession->clientHostname = [clientHostname copy];
-	newSession->username = [username copy];
-	newSession->password = [password copy];
-	newSession->domain = [domain copy];
+	newSession->_label = [_label copy];
+	newSession->_hostName = [_hostName copy];
+	newSession->_clientHostname = [_clientHostname copy];
+	newSession->_username = [_username copy];
+	newSession->_password = [_password copy];
+	newSession->_domain = [_domain copy];
 	newSession->otherAttributes = [otherAttributes copy];
 	newSession->forwardDisks = forwardDisks; 
-	newSession->forwardAudio = forwardAudio;
+	newSession->_forwardAudio = _forwardAudio;
 	newSession->forwardPrinters = forwardPrinters;
 	newSession->savePassword = savePassword;
 	newSession->drawDesktop = drawDesktop;
@@ -173,8 +173,8 @@
 	newSession->screenWidth = screenWidth;
 	newSession->screenHeight = screenHeight;
 	newSession->port = port;
-	newSession->modified = modified;
-	newSession->hotkey = hotkey;
+	newSession->_modified = _modified;
+	newSession->_hotkey = _hotkey;
 
 	return newSession;
 }
@@ -196,12 +196,12 @@
 	RDStreamRef s;
 	uint32 ext_disc_reason;
 	
-	if (connectionStatus != CRDConnectionConnected)
+	if (_connectionStatus != CRDConnectionConnected)
 		return;
 	
 	do
 	{
-		s = rdp_recv(conn, &type);
+		s = rdp_recv(_conn, &type);
 		if (s == NULL)
 		{
 			[g_appController performSelectorOnMainThread:@selector(disconnectInstance:) withObject:self waitUntilDone:NO];
@@ -211,20 +211,20 @@
 		switch (type)
 		{
 			case RDP_PDU_DEMAND_ACTIVE:
-				process_demand_active(conn, s);
+				process_demand_active(_conn, s);
 				break;
 			case RDP_PDU_DEACTIVATE:
 				DEBUG(("RDP_PDU_DEACTIVATE\n"));
 				break;
 			case RDP_PDU_DATA:
-				if (process_data_pdu(conn, s, &ext_disc_reason))
+				if (process_data_pdu(_conn, s, &ext_disc_reason))
 				{
 					[g_appController performSelectorOnMainThread:@selector(disconnectInstance:) withObject:self waitUntilDone:NO];
 					return;
 				}
 				break;
 			case RDP_PDU_REDIRECT:
-				process_redirect_pdu(conn, s);
+				process_redirect_pdu(_conn, s);
 				break;
 			case 0:
 				break;
@@ -232,39 +232,39 @@
 				unimpl("PDU %d\n", type);
 		}
 		
-	} while ( (conn->nextPacket < s->end) && (connectionStatus == CRDConnectionConnected) );
+	} while ( (_conn->nextPacket < s->end) && (_connectionStatus == CRDConnectionConnected) );
 }
 
 // Using the current properties, attempt to connect to a server. Blocks until timeout or failure.
 - (BOOL)connect
 {
-	if (connectionStatus == CRDConnectionDisconnecting)
+	if (_connectionStatus == CRDConnectionDisconnecting)
 	{
 		time_t startTime = time(NULL);
 		
-		while (connectionStatus == CRDConnectionDisconnecting)
+		while (_connectionStatus == CRDConnectionDisconnecting)
 			usleep(1000);
 			
 		if (time(NULL) - startTime > 10)
-			CRDLog(CRDLogLevelError, @"Got hung up on old frozen connection while connecting to %@", label);
+			CRDLog(CRDLogLevelError, @"Got hung up on old frozen connection while connecting to %@", _label);
 	}
 	
-	if (connectionStatus != CRDConnectionClosed)
+	if (_connectionStatus != CRDConnectionClosed)
 		return NO;
 	
-	connectionStatus = CRDConnectionConnecting;
+	_connectionStatus = CRDConnectionConnecting;
 	
-	free(conn);
-	conn = malloc(sizeof(RDConnection));
-	memset(conn, 0, sizeof(RDConnection));
-	CRDFillDefaultConnection(conn);
-	conn->controller = self;
+	free(_conn);
+	_conn = malloc(sizeof(RDConnection));
+	memset(_conn, 0, sizeof(RDConnection));
+	CRDFillDefaultConnection(_conn);
+	_conn->controller = self;
 	
 	// Fail quickly if it's a totally bogus host
-	if (![hostName length])
+	if (![_hostName length])
 	{
-		connectionStatus = CRDConnectionClosed;
-		conn->errorCode = ConnectionErrorHostResolution;
+		_connectionStatus = CRDConnectionClosed;
+		_conn->errorCode = ConnectionErrorHostResolution;
 		return NO;
 	}
 	
@@ -290,32 +290,32 @@
 	if (fontSmoothing)
 		performanceFlags |= RDP5_FONT_SMOOTHING;  
 	
-	conn->rdp5PerformanceFlags = performanceFlags;
+	_conn->rdp5PerformanceFlags = performanceFlags;
 	
 
 	// Simple heuristic to guess if user wants to auto log-in
 	unsigned logonFlags = RDP_LOGON_NORMAL;
-	if ([username length] > 0 && ([password length] || savePassword))
+	if ([_username length] > 0 && ([_password length] || savePassword))
 		logonFlags |= RDP_LOGON_AUTO;
 		
 	if (consoleSession)
 		logonFlags |= RDP_LOGON_LEAVE_AUDIO;
 	
-	logonFlags |= conn->useRdp5 ? RDP_LOGON_COMPRESSION2 : RDP_LOGON_COMPRESSION;
+	logonFlags |= _conn->useRdp5 ? RDP_LOGON_COMPRESSION2 : RDP_LOGON_COMPRESSION;
 	
 	// Other various settings
-	conn->serverBpp = (screenDepth==8 || screenDepth==16 || screenDepth==24) ? screenDepth : 16;
-	conn->consoleSession = consoleSession;
-	conn->screenWidth = screenWidth ? screenWidth : CRDDefaultScreenWidth;
-	conn->screenHeight = screenHeight ? screenHeight : CRDDefaultScreenHeight;
-	conn->tcpPort = (!port || port>=65536) ? CRDDefaultPort : port;
-	strncpy(conn->username, CRDMakeWindowsString(username), sizeof(conn->username));
+	_conn->serverBpp = (screenDepth==8 || screenDepth==16 || screenDepth==24) ? screenDepth : 16;
+	_conn->consoleSession = consoleSession;
+	_conn->screenWidth = screenWidth ? screenWidth : CRDDefaultScreenWidth;
+	_conn->screenHeight = screenHeight ? screenHeight : CRDDefaultScreenHeight;
+	_conn->tcpPort = (!port || port>=65536) ? CRDDefaultPort : port;
+	strncpy(_conn->username, CRDMakeWindowsString(_username), sizeof(_conn->username));
 
 	// Set remote keymap to match local OS X input type
 	if (CRDPreferenceIsEnabled(CRDSetServerKeyboardLayout))
-		conn->keyboardLayout = [CRDKeyboard windowsKeymapForMacKeymap:[CRDKeyboard currentKeymapIdentifier]];
+		_conn->keyboardLayout = [CRDKeyboard windowsKeymapForMacKeymap:[CRDKeyboard currentKeymapIdentifier]];
 	else
-		conn->keyboardLayout = 0;
+		_conn->keyboardLayout = 0;
 	
 	if (forwardDisks)
 	{
@@ -349,34 +349,34 @@
 		}
 		
 		if ([validDrives count] && [validNames count])
-			disk_enum_devices(conn, CRDMakeCStringArray(validDrives), CRDMakeCStringArray(validNames), [validDrives count]);
+			disk_enum_devices(_conn, CRDMakeCStringArray(validDrives), CRDMakeCStringArray(validNames), [validDrives count]);
 	}
 	
 
 	if (forwardPrinters)
-		printer_enum_devices(conn);
+		printer_enum_devices(_conn);
 	
-	if (forwardAudio == CRDLeaveAudio)
+	if (_forwardAudio == CRDLeaveAudio)
 	{
 		logonFlags |= RDP_LOGON_LEAVE_AUDIO;
 	}
 	
-	if ([clientHostname length]) {
-		memset(conn->hostname,0,64);
-		strncpy(conn->hostname, CRDMakeWindowsString(clientHostname), 64);
-        conn->hostname[MIN([clientHostname length], 64)] = '\0';
+	if ([_clientHostname length]) {
+		memset(_conn->hostname,0,64);
+		strncpy(_conn->hostname, CRDMakeWindowsString(_clientHostname), 64);
+        _conn->hostname[MIN([_clientHostname length], 64)] = '\0';
 	}
 	
-	rdpdr_init(conn);
-	cliprdr_init(conn);
+	rdpdr_init(_conn);
+	cliprdr_init(_conn);
 
 	// Make the connection
-	BOOL connected = rdp_connect(conn,
-							[hostName UTF8String], 
+	BOOL connected = rdp_connect(_conn,
+							[_hostName UTF8String], 
 							logonFlags, 
-							domain,
-							username,
-							password,
+							_domain,
+							_username,
+							_password,
 							"",  /* xxx: command on logon */
 							"", /* xxx: session directory */
 							NO
@@ -388,13 +388,13 @@
 		[self setStatus:CRDConnectionConnected];
 		[self setUpConnectionThread];
 
-		NSStream *is = conn->inputStream;
+		NSStream *is = _conn->inputStream;
 		[is setDelegate:self];
 		[is scheduleInRunLoop:connectionRunLoop forMode:NSDefaultRunLoopMode];
 
-		[self performSelectorOnMainThread:@selector(createViewWithFrameValue:) withObject:[NSValue valueWithRect:NSMakeRect(0.0, 0.0, conn->screenWidth, conn->screenHeight)] waitUntilDone:YES];
+		[self performSelectorOnMainThread:@selector(createViewWithFrameValue:) withObject:[NSValue valueWithRect:NSMakeRect(0.0, 0.0, _conn->screenWidth, _conn->screenHeight)] waitUntilDone:YES];
 	}
-	else if (connectionStatus == CRDConnectionConnecting)
+	else if (_connectionStatus == CRDConnectionConnecting)
 	{
 		[self setStatus:CRDConnectionClosed];
 		[self performSelectorOnMainThread:@selector(setStatusAsNumber:) withObject:@(CRDConnectionClosed) waitUntilDone:NO];
@@ -411,8 +411,8 @@
 - (void)disconnectAsync:(NSNumber *)nonblocking
 {
 	@autoreleasepool {
-        if (connectionStatus == CRDConnectionConnecting)
-            conn->errorCode = ConnectionErrorCanceled;
+        if (_connectionStatus == CRDConnectionConnecting)
+            _conn->errorCode = ConnectionErrorCanceled;
         
         [self setStatus:CRDConnectionDisconnecting];
         if (connectionRunLoopFinished || ![nonblocking boolValue])
@@ -437,21 +437,21 @@
             {
                 for (k = 0; k < BITMAP_CACHE_ENTRIES; k++)
                 {
-                    ui_destroy_bitmap(conn->bmpcache[i][k].bitmap);
-                    conn->bmpcache[i][k].bitmap = NULL;
+                    ui_destroy_bitmap(_conn->bmpcache[i][k].bitmap);
+                    _conn->bmpcache[i][k].bitmap = NULL;
                 }
             }
             
             for (i = 0; i < CURSOR_CACHE_SIZE; i++)
-                ui_destroy_cursor(conn->cursorCache[i]);
+                ui_destroy_cursor(_conn->cursorCache[i]);
             
             
-            free(conn->rdpdrClientname);
+            free(_conn->rdpdrClientname);
             
             
-            memset(conn, 0, sizeof(RDConnection));
-            free(conn);
-            conn = NULL;
+            memset(_conn, 0, sizeof(RDConnection));
+            free(_conn);
+            _conn = NULL;
             
             [self setStatus:CRDConnectionClosed];
         }
@@ -476,9 +476,9 @@
             @autoreleasepool {
                 gotInput = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.25]];
             }
-        } while (connectionStatus == CRDConnectionConnected && gotInput);
+        } while (_connectionStatus == CRDConnectionConnected && gotInput);
                 
-        rdp_disconnect(conn);
+        rdp_disconnect(_conn);
         [self discardConnectionThread];
         connectionRunLoopFinished = YES;
     }
@@ -502,7 +502,7 @@
 // Assures that the remote clipboard is the same as the passed pasteboard, sending new clipboard as needed
 - (void)setRemoteClipboard:(int)suggestedFormat
 {
-	if (connectionStatus != CRDConnectionConnected)
+	if (_connectionStatus != CRDConnectionConnected)
 		return;
 		
 	NSPasteboard *pb = [NSPasteboard generalPasteboard];
@@ -520,16 +520,16 @@
 
 	[unicodePasteContent increaseLengthBy:2];  // NULL terminate with 2 bytes (UTF16LE)
 	
-	cliprdr_send_data(conn, (unsigned char *)[unicodePasteContent bytes], [unicodePasteContent length]);
+	cliprdr_send_data(_conn, (unsigned char *)[unicodePasteContent bytes], [unicodePasteContent length]);
 }
 
 - (void)requestRemoteClipboardData
 {
-	if (connectionStatus != CRDConnectionConnected)
+	if (_connectionStatus != CRDConnectionConnected)
 		return;
 		
-	conn->clipboardRequestType = CF_UNICODETEXT;
-	cliprdr_send_data_request(conn, CF_UNICODETEXT);
+	_conn->clipboardRequestType = CF_UNICODETEXT;
+	cliprdr_send_data_request(_conn, CF_UNICODETEXT);
 }
 
 // Sets the local clipboard to match the server provided data. Only called by server (via CRDMixedGlue) when new data has actually arrived
@@ -565,8 +565,8 @@
 	if ([[NSPasteboard generalPasteboard] availableTypeFromArray:@[NSStringPboardType]] == nil)
 		return;
 	
-	if (connectionStatus == CRDConnectionConnected)
-		cliprdr_send_simple_native_format_announce(conn, CF_UNICODETEXT);
+	if (_connectionStatus == CRDConnectionConnected)
+		cliprdr_send_simple_native_format_announce(_conn, CF_UNICODETEXT);
 }
 
 - (void)pasteboardChangedOwner:(NSPasteboard *)sender
@@ -600,20 +600,20 @@
 	write_int(@"disable menu anims", (long)!windowAnimation);
 	write_int(@"disable themes", (long)!themes);
 	write_int(@"disable font smoothing", (long)!fontSmoothing);
-	write_int(@"audiomode", forwardAudio);
+	write_int(@"audiomode", _forwardAudio);
 	write_int(@"desktopwidth", screenWidth);
 	write_int(@"desktopheight", screenHeight);
 	write_int(@"session bpp", screenDepth);
 	write_int(@"cord save password", (long)savePassword);
 	write_int(@"cord fullscreen", (long)fullscreen);
 	write_int(@"cord row index", preferredRowIndex);
-	write_int(@"cord hotkey", hotkey);
-	write_int(@"cord displayMode", displayMode);
+	write_int(@"cord hotkey", _hotkey);
+	write_int(@"cord displayMode", _displayMode);
 	
-	write_string(@"full address", CRDJoinHostNameAndPort(hostName, port));
-	write_string(@"username", username);
-	write_string(@"domain", domain);
-	write_string(@"cord label", label);
+	write_string(@"full address", CRDJoinHostNameAndPort(_hostName, port));
+	write_string(@"username", _username);
+	write_string(@"domain", _domain);
+	write_string(@"cord label", _label);
 	
 	// Write all entries in otherAttributes	
 	for (NSString *key in otherAttributes)
@@ -641,7 +641,7 @@
 
 	if (writeToFileSucceeded && updateNamesFlag)
 	{
-		modified = NO;
+		_modified = NO;
 		[self setFilename:expandedPath];
 	}
 	
@@ -667,15 +667,15 @@
 		return [self performSelectorOnMainThread:@selector(updateCellData) withObject:nil waitUntilDone:NO];
 	
 	// Update the text
-	NSString *fullHost = (port && port != CRDDefaultPort) ? [NSString stringWithFormat:@"%@:%ld", hostName, port] : hostName;
-	[cellRepresentation setDisplayedText:label username:username address:fullHost];
+	NSString *fullHost = (port && port != CRDDefaultPort) ? [NSString stringWithFormat:@"%@:%ld", _hostName, port] : _hostName;
+	[_cellRepresentation setDisplayedText:_label username:_username address:fullHost];
 	
 	// Update the image
-	if (connectionStatus != CRDConnectionConnecting)
+	if (_connectionStatus != CRDConnectionConnecting)
 	{
 		NSString *iconBaseName = @"RDP Document File";
 		
-		if (connectionStatus == CRDConnectionClosed)
+		if (_connectionStatus == CRDConnectionClosed)
 			iconBaseName = @"RDP Document Gray";
 			
 		NSImage *base = [NSImage imageNamed:iconBaseName];
@@ -703,49 +703,49 @@
 			} [cellImage unlockFocus];
 		}
 
-		[cellRepresentation setImage:cellImage];
+		[_cellRepresentation setImage:cellImage];
 	}
 	
-	[g_appController cellNeedsDisplay:cellRepresentation];
+	[g_appController cellNeedsDisplay:_cellRepresentation];
 }
 
 - (void)createWindow:(BOOL)useScrollView
 {	
 	[NSAnimationContext beginGrouping];
 	_usesScrollers = useScrollView;
-	[window release];
-	NSRect sessionScreenSize = [view bounds];
-	window = [[NSWindow alloc] initWithContentRect:sessionScreenSize styleMask:(NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask) backing:NSBackingStoreBuffered defer:NO];
+	[_window release];
+	NSRect sessionScreenSize = [_view bounds];
+	_window = [[NSWindow alloc] initWithContentRect:sessionScreenSize styleMask:(NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask) backing:NSBackingStoreBuffered defer:NO];
 	
-	[window setContentMaxSize:sessionScreenSize.size];
-	[window setTitle:label];
-	[window setAcceptsMouseMovedEvents:YES];
-	[window setDelegate:self];
-	[window setReleasedWhenClosed:NO];
-	[[window contentView] setAutoresizesSubviews:YES];
-	[window setContentMinSize:NSMakeSize(100.0, 75.0)];
+	[_window setContentMaxSize:sessionScreenSize.size];
+	[_window setTitle:_label];
+	[_window setAcceptsMouseMovedEvents:YES];
+	[_window setDelegate:self];
+	[_window setReleasedWhenClosed:NO];
+	[[_window contentView] setAutoresizesSubviews:YES];
+	[_window setContentMinSize:NSMakeSize(100.0, 75.0)];
 	
-	[window setAlphaValue:0.0];
-	[view setFrameOrigin:NSZeroPoint];
-	[view removeFromSuperview];
+	[_window setAlphaValue:0.0];
+	[_view setFrameOrigin:NSZeroPoint];
+	[_view removeFromSuperview];
 	
 	if (useScrollView)
 	{
-		[self createScrollEnclosure:[[window contentView] bounds]];
-		[[window contentView] addSubview:scrollEnclosure];
+		[self createScrollEnclosure:[[_window contentView] bounds]];
+		[[_window contentView] addSubview:scrollEnclosure];
 	}
 	else
 	{
-		[view setFrameSize:[[window contentView] frame].size];
-		[view setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
-		[window setContentAspectRatio:sessionScreenSize.size];
-		[[window contentView] addSubview:view];
-		[view setNeedsDisplay:YES];
+		[_view setFrameSize:[[_window contentView] frame].size];
+		[_view setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
+		[_window setContentAspectRatio:sessionScreenSize.size];
+		[[_window contentView] addSubview:_view];
+		[_view setNeedsDisplay:YES];
 	}
 	
-	[[window animator] setAlphaValue:1.0];
-	[window makeFirstResponder:view];
-	[window display];
+	[[_window animator] setAlphaValue:1.0];
+	[_window makeFirstResponder:_view];
+	[_window display];
 	[NSAnimationContext endGrouping];
 }
 
@@ -756,7 +756,7 @@
 	if (useScrollView)
 		[self createScrollEnclosure:enclosure];
 	else
-		[view setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
+		[_view setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
 }
 
 - (void)destroyUnified
@@ -765,20 +765,20 @@
 
 - (void)destroyWindow
 {
-	[window setDelegate:nil]; // avoid the last windowWillClose delegate message
-	[window close];
-	[window release];
-	window = nil;
+	[_window setDelegate:nil]; // avoid the last windowWillClose delegate message
+	[_window close];
+	[_window release];
+	_window = nil;
 }
 
 - (void)destroyUIElements
 {
-	[view setController:nil]; // inform view it's no longer being controller and is probably being deallocated
+	[_view setController:nil]; // inform view it's no longer being controller and is probably being deallocated
 	[self destroyWindow];
 	[scrollEnclosure release];
 	scrollEnclosure = nil;
-	[view release];
-	view = nil;
+	[_view release];
+	_view = nil;
 }
 
 #pragma mark -
@@ -786,25 +786,25 @@
 
 - (void)windowWillClose:(NSNotification *)aNotification
 {
-	if (connectionStatus == CRDConnectionConnected)
+	if (_connectionStatus == CRDConnectionConnected)
 		[g_appController disconnectInstance:self];
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)sender
 {
-	if ([sender object] == window)
+	if ([sender object] == _window)
 		[self announceNewClipboardData];
 }
 
 - (void)windowDidResignKey:(NSNotification *)sender
 {
-	if ([sender object] == window)
+	if ([sender object] == _window)
 		[self requestRemoteClipboardData];
 }
 
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)proposedFrameSize
 {
-	NSSize realSize = [view bounds].size;
+	NSSize realSize = [_view bounds].size;
 	realSize.height += [sender frame].size.height - [[sender contentView] frame].size.height;
 	
 	if ( (realSize.width-proposedFrameSize.width <= CRDWindowSnapSize) && (realSize.height-proposedFrameSize.height <= CRDWindowSnapSize) )
@@ -819,12 +819,12 @@
 
 - (void)sendInputOnConnectionThread:(uint32)time type:(uint16)type flags:(uint16)flags param1:(uint16)param1 param2:(uint16)param2
 {
-	if (connectionStatus != CRDConnectionConnected)
+	if (_connectionStatus != CRDConnectionConnected)
 		return;
 	
 	if ([NSThread currentThread] == connectionThread)
 	{
-		rdp_send_input(conn, time, type, flags, param1, param2);
+		rdp_send_input(_conn, time, type, flags, param1, param2);
 	}
 	else
 	{	
@@ -867,10 +867,10 @@
 
 - (void)cancelConnection
 {
-	if ( (connectionStatus != CRDConnectionConnecting) || !conn)
+	if ( (_connectionStatus != CRDConnectionConnecting) || !_conn)
 		return;
 	
-	conn->errorCode = ConnectionErrorCanceled;
+	_conn->errorCode = ConnectionErrorCanceled;
 }
 
 - (NSComparisonResult)compareUsingPreferredOrder:(id)compareTo
@@ -878,7 +878,7 @@
 	int otherOrder = [[compareTo valueForKey:@"preferredRowIndex"] intValue];
 	
 	if (preferredRowIndex == otherOrder)
-		return [[compareTo label] compare:label];
+		return [[compareTo label] compare:_label];
 	else
 		return (preferredRowIndex - otherOrder > 0) ? NSOrderedDescending : NSOrderedAscending;
 }
@@ -889,18 +889,18 @@
 
 - (void)clearKeychainData
 {
-	keychain_clear_password([hostName UTF8String], [username UTF8String]);
+	keychain_clear_password([_hostName UTF8String], [_username UTF8String]);
 }
 
 
 #pragma mark -
 #pragma mark Accessors
 
-@synthesize hostName, label, clientHostname, conn, view, isTemporary, modified, cellRepresentation, status=connectionStatus, window, hotkey, forwardAudio, displayMode, username, password, domain;
+@synthesize status = _connectionStatus;
 
 - (NSView *)tabItemView
 {
-	return (scrollEnclosure) ? scrollEnclosure : (NSView *)view;
+	return (scrollEnclosure) ? scrollEnclosure : (NSView *)_view;
 }
 
 - (NSString *)filename
@@ -921,12 +921,12 @@
 
 - (void)setIsTemporary:(BOOL)temp
 {
-	if (temp == isTemporary)
+	if (temp == _isTemporary)
 		return;
 		
 		
 	[self willChangeValueForKey:@"temporary"];
-	isTemporary = temp;
+	_isTemporary = temp;
 	[self didChangeValueForKey:@"temporary"];
 	[self updateCellData];
 }
@@ -936,35 +936,35 @@
 
 - (void)setLabel:(NSString *)newLabel
 {	
-	[label autorelease];
-	label = [newLabel copy];
+	[_label autorelease];
+	_label = [newLabel copy];
 	[self updateCellData];
 }
 
 - (void)setHostName:(NSString *)newHost
 {	
-	[self updateKeychainData:newHost user:username password:password force:NO];
+	[self updateKeychainData:newHost user:_username password:_password force:NO];
 	
-	[hostName autorelease];
-	hostName = [newHost copy];
+	[_hostName autorelease];
+	_hostName = [newHost copy];
 	[self updateCellData];
 }
 
 - (void)setUsername:(NSString *)newUser
 {
-	[self updateKeychainData:hostName user:newUser password:password force:NO];
+	[self updateKeychainData:_hostName user:newUser password:_password force:NO];
 	
-	[username autorelease];
-	username = [newUser copy];
+	[_username autorelease];
+	_username = [newUser copy];
 	[self updateCellData];
 }
 
 - (void)setPassword:(NSString *)newPassword
 {
-	[self updateKeychainData:hostName user:username password:newPassword force:NO];
+	[self updateKeychainData:_hostName user:_username password:newPassword force:NO];
 	
-	[password autorelease];
-	password = [newPassword copy];
+	[_password autorelease];
+	_password = [newPassword copy];
 }
 
 - (void)setPort:(int)newPort
@@ -983,7 +983,7 @@
 	if (!savePassword)	
 		[self clearKeychainData];
 	else
-		[self updateKeychainData:hostName user:username password:password force:YES];
+		[self updateKeychainData:_hostName user:_username password:_password force:YES];
 }
 
 @end
@@ -1064,7 +1064,7 @@
 		else if ([name isEqualToString:@"disable font smoothing"])
 			fontSmoothing = !numVal;
 		else if ([name isEqualToString:@"audiomode"])
-			forwardAudio = numVal;
+			_forwardAudio = numVal;
 		else if ([name isEqualToString:@"desktopwidth"]) 
 			screenWidth = numVal;
 		else if ([name isEqualToString:@"desktopheight"]) 
@@ -1072,25 +1072,25 @@
 		else if ([name isEqualToString:@"session bpp"]) 
 			screenDepth = numVal;
 		else if ([name isEqualToString:@"username"])
-			username = [value retain];
+			_username = [value retain];
 		else if ([name isEqualToString:@"cord save password"]) 
 			savePassword = numVal;
 		else if ([name isEqualToString:@"domain"])
-			domain = [value retain];
+			_domain = [value retain];
 		else if ([name isEqualToString:@"cord label"])
-			label = [value retain];
+			_label = [value retain];
 		else if ([name isEqualToString:@"cord row index"])
 			preferredRowIndex = numVal;
 		else if ([name isEqualToString:@"full address"]) {
-			CRDSplitHostNameAndPort(value, &hostName, &port);
-			[hostName retain];
+			CRDSplitHostNameAndPort(value, &_hostName, &port);
+			[_hostName retain];
 		}
 		else if ([name isEqualToString:@"cord fullscreen"])
 			fullscreen = numVal;
 		else if ([name isEqualToString:@"cord displayMode"])
-			displayMode = numVal;
+			_displayMode = numVal;
 		else if ([name isEqualToString:@"cord hotkey"]) {
-			hotkey = (numVal == 0) ? (-1) : numVal;
+			_hotkey = (numVal == 0) ? (-1) : numVal;
 		}
 
 		else
@@ -1102,15 +1102,15 @@
 		}
 	}
 		
-	modified = NO;
+	_modified = NO;
 	[self setIsTemporary:NO];
 	
 	if (savePassword)
 	{
-		const char *pass = keychain_get_password([hostName UTF8String], [username UTF8String]);
+		const char *pass = keychain_get_password([_hostName UTF8String], [_username UTF8String]);
 		if (pass != NULL)
 		{
-			password = [@(pass) retain];
+			_password = [@(pass) retain];
 			free((void*)pass);
 		}
 	}
@@ -1127,9 +1127,9 @@
 // Force makes it save data to keychain regardless if it has changed. savePassword  is always respected.
 - (void)updateKeychainData:(NSString *)newHost user:(NSString *)newUser password:(NSString *)newPassword force:(BOOL)force
 {
-	if (savePassword && (force || ![hostName isEqualToString:newHost] || ![username isEqualToString:newUser] || ![password isEqualToString:newPassword]) )
+	if (savePassword && (force || ![_hostName isEqualToString:newHost] || ![_username isEqualToString:newUser] || ![_password isEqualToString:newPassword]) )
 	{
-		keychain_update_password([hostName UTF8String], [username UTF8String], [newHost UTF8String], [newUser UTF8String], [newPassword UTF8String]);
+		keychain_update_password([_hostName UTF8String], [_username UTF8String], [newHost UTF8String], [newUser UTF8String], [newPassword UTF8String]);
 	}
 }
 
@@ -1139,8 +1139,8 @@
 
 - (void)setStatus:(CRDConnectionStatus)newStatus
 {
-	[cellRepresentation setStatus:newStatus];
-	connectionStatus = newStatus;
+	[_cellRepresentation setStatus:newStatus];
+	_connectionStatus = newStatus;
 	[self updateCellData];
 }
 
@@ -1158,10 +1158,10 @@
 {
 	[scrollEnclosure release];
 	scrollEnclosure = [[NSScrollView alloc] initWithFrame:frame];
-	[view setAutoresizingMask:NSViewNotSizable];
-	[view setFrame:NSMakeRect(0,0, [view width], [view height])];
+	[_view setAutoresizingMask:NSViewNotSizable];
+	[_view setFrame:NSMakeRect(0,0, [_view width], [_view height])];
 	[scrollEnclosure setAutoresizingMask:(NSViewMinXMargin | NSViewMaxXMargin | NSViewMinYMargin | NSViewMaxYMargin | NSViewWidthSizable | NSViewHeightSizable)];
-	[scrollEnclosure setDocumentView:view];
+	[scrollEnclosure setDocumentView:_view];
 	[scrollEnclosure setHasVerticalScroller:YES];
 	[scrollEnclosure setHasHorizontalScroller:YES];
 	[scrollEnclosure setAutohidesScrollers:YES];
@@ -1171,12 +1171,12 @@
 
 - (void)createViewWithFrameValue:(NSValue *)frameRect
 {	
-	if (conn == NULL)
+	if (_conn == NULL)
 		return;
 	
-	view = [[CRDSessionView alloc] initWithFrame:[frameRect rectValue]];
-	[view setController:self];
-	conn->ui = view;
+	_view = [[CRDSessionView alloc] initWithFrame:[frameRect rectValue]];
+	[_view setController:self];
+	_conn->ui = _view;
 }
 
 

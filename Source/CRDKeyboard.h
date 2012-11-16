@@ -25,7 +25,6 @@
 	@private
 		unsigned remoteModifiers;
 		NSMutableDictionary *virtualKeymap;
-		CRDSession *controller;
 }
 
 @property (assign, nonatomic) CRDSession *controller;

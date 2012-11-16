@@ -202,8 +202,6 @@ static NSDictionary *windowsKeymapTable = nil;
 #pragma mark -
 #pragma mark Accessors
 
-@synthesize controller;
-
 
 #pragma mark -
 #pragma mark Keymap file parser

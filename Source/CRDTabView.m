@@ -23,8 +23,6 @@
 
 @implementation CRDTabView
 
-@synthesize selectedItem=_selectedItem;
-
 - (id)initWithFrame:(NSRect)frame
 {
 	if (!(self = [super initWithFrame:frame]))
