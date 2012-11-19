@@ -29,8 +29,8 @@
 #import "rdesktop.h"
 #import "CRDShared.h"
 
-//#define KEYMAP_ENTRY(n) [[virtualKeymap objectForKey:[NSNumber numberWithInt:(n)]] intValue]
-//#define SET_KEYMAP_ENTRY(n, v) [virtualKeymap setObject:[NSNumber numberWithInt:(v)] forKey:[NSNumber numberWithInt:(n)]]
+#define KEYMAP_ENTRY(n) [[virtualKeymap objectForKey:[NSNumber numberWithInt:(n)]] intValue]
+#define SET_KEYMAP_ENTRY(n, v) [virtualKeymap setObject:[NSNumber numberWithInt:(v)] forKey:[NSNumber numberWithInt:(n)]]
 #define GET_MODIFIER_FLAGS(f) (CRDPreferenceIsEnabled(CRDPrefsIgnoreCustomModifiers) ? [CRDSwappedModifiersUtility physicalModifiersForVirtualFlags:f] : f )
 
 
@@ -113,13 +113,13 @@ static NSDictionary *windowsKeymapTable = nil;
 
 - (void)sendKeycode:(uint8)keyCode modifiers:(uint16)rdflags pressed:(BOOL)down
 {
-	if (virtualKeymap[@(keyCode)] == nil)
+	if (virtualKeymap[[NSNumber numberWithInt:keyCode]] == nil)
 		return;
 	
 	if (down)
-		[self sendScancode:[virtualKeymap[@(keyCode)] intValue] flags:(rdflags | RDP_KEYPRESS)];
+		[self sendScancode:KEYMAP_ENTRY(keyCode) flags:(rdflags | RDP_KEYPRESS)];
 	else
-		[self sendScancode:[virtualKeymap[@(keyCode)] intValue] flags:(rdflags | RDP_KEYRELEASE)];
+		[self sendScancode:KEYMAP_ENTRY(keyCode) flags:(rdflags | RDP_KEYRELEASE)];
 }
 
 - (void)sendScancode:(uint8)scancode flags:(uint16)flags
@@ -202,6 +202,8 @@ static NSDictionary *windowsKeymapTable = nil;
 #pragma mark -
 #pragma mark Accessors
 
+@synthesize controller;
+
 
 #pragma mark -
 #pragma mark Keymap file parser
@@ -238,7 +240,7 @@ static NSDictionary *windowsKeymapTable = nil;
 			b &= [scanner scanHexInt:&scancode];
 			
 			if (b)
-				virtualKeymap[@(scancode)] = @(osxVKValue);
+				SET_KEYMAP_ENTRY(osxVKValue, scancode);
 		}	
 	}
 	
@@ -250,7 +252,7 @@ static NSDictionary *windowsKeymapTable = nil;
 	{
 		case kKeyboardISO:
 			CRDLog(CRDLogLevelDebug, @"Enabling hacks for European keyboard");
-			virtualKeymap[@(0x56)] = @(0x32);
+			SET_KEYMAP_ENTRY(0x32, 0x56);
 			break;
 				
 		default:
