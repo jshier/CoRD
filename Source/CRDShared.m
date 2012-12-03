@@ -69,7 +69,7 @@ NSString * const CRDUseSocksProxy = @"CRDUseSocksProxy";
 NSString * const CRDSavedServersPath = @"savedServersPath";
 NSString * const CRDDefaultUserName = @"defaultUserName";
 NSString * const CRDDefaultUserPassword = @"defaultUserPassword";
-NSString * const CRDDefalutDomain = @"defaultDomain";
+NSString * const CRDDefaultDomain = @"defaultDomain";
 
 #pragma mark -
 #pragma mark General purpose routines
