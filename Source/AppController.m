@@ -26,6 +26,7 @@
 #import "CRDTabView.h"
 #import "CRDShared.h"
 #import "CRDLabelCell.h"
+#import "keychain.h"
 
 #define TOOLBAR_DISCONNECT	@"Disconnect"
 #define TOOLBAR_DRAWER @"Servers"
@@ -794,7 +795,7 @@
 	[newInst setValue:hostname forKey:@"hostName"];
 	[newInst setValue:@(port) forKey:@"port"];
     newInst.username = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultUserName"];
-    newInst.password = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultUserPassword"];
+    newInst.password = [NSString stringWithUTF8String:keychain_get_password("Default Password", "Default Username")];
     newInst.domain = [[NSUserDefaults standardUserDefaults] valueForKey:@"CRDDefaultDomain"];
 
 	if (isConsoleSession)
