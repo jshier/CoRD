@@ -156,7 +156,7 @@ inline unsigned int CRDRoundUpToEven(float n)
 	return i % 2 ? i + 1 : i;
 }
 
-NSString * CRDConvertLineEndings(NSString *orig, BOOL withCarriageReturn)
+NSString *CRDConvertLineEndings(NSString *orig, BOOL withCarriageReturn)
 {
 	if (![orig length])
 		return @"";
