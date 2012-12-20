@@ -34,7 +34,13 @@
 	[screenResolutionsController setSortDescriptors:@[[[[NSSortDescriptor alloc] initWithKey:@"resolution" ascending:YES selector:@selector(compareScreenResolution:)] autorelease]]];
 	[screenResolutionsController addObserver:self forKeyPath:@"sortDescriptors" options:0 context:NULL];
 	[self changePanes:[toolbar items][0]];
-    passwordTextField.stringValue = @(keychain_get_default_password());
+
+    {
+
+        const char *defaultPass = keychain_get_default_password();
+        if (defaultPass)
+            passwordTextField.stringValue = [NSString stringWithUTF8String:defaultPass];
+    }
 	
 	[savedServersPathControl registerForDraggedTypes:@[NSFilenamesPboardType]];
 }
