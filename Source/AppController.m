@@ -2228,7 +2228,7 @@
 											 defaultButton:NSLocalizedString(@"Retry", @"Connection errors -> Retry button") 
 										   alternateButton:NSLocalizedString(@"Cancel",@"Connection errors -> Cancel button") 
 											   otherButton:nil 
-								 informativeTextWithFormat:localizedErrorDescriptions[errorCode]];
+								 informativeTextWithFormat:@"%@", localizedErrorDescriptions[errorCode]];
 			[alert setAlertStyle:NSCriticalAlertStyle];
 			
 			// Retry if requested
