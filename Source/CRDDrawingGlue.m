@@ -22,6 +22,7 @@
 
 #import "rdesktop.h"
 
+#import "AppController.h"
 #import "CRDShared.h"
 #import "CRDSession.h"
 #import "CRDSessionView.h"

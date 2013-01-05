@@ -15,8 +15,9 @@
 	Fifth Floor, Boston, MA 02110-1301 USA
 */
 
-#include "CRDShared.h"
-#include <unistd.h>
+#import "CRDShared.h"
+#import "AppController.h"
+#import <unistd.h>
 
 
 #pragma mark -
