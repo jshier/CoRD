@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3136EE5416AB84A8000F9E88 /* CRDAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3136EE5316AB84A8000F9E88 /* CRDAppDelegate.m */; };
 		37344C210FB141D200DFD6E6 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37344C200FB141D200DFD6E6 /* Security.framework */; };
 		37D191820FCE69E8008797FD /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37D191810FCE69E8008797FD /* Carbon.framework */; };
 		3E4B676F1019E2D700D3A911 /* CRDFilePathLabelFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E4B676B1019E2D700D3A911 /* CRDFilePathLabelFormatter.m */; };
@@ -129,6 +130,8 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		3136EE5216AB84A8000F9E88 /* CRDAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CRDAppDelegate.h; path = Source/CRDAppDelegate.h; sourceTree = "<group>"; };
+		3136EE5316AB84A8000F9E88 /* CRDAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CRDAppDelegate.m; path = Source/CRDAppDelegate.m; sourceTree = "<group>"; };
 		37344C200FB141D200DFD6E6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = /System/Library/Frameworks/Security.framework; sourceTree = "<absolute>"; };
 		37344CD30FB177AB00DFD6E6 /* rdpsnd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rdpsnd.h; path = Source/rdpsnd.h; sourceTree = "<group>"; };
 		37D191810FCE69E8008797FD /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
@@ -302,6 +305,8 @@
 				999A01E20FAA1DC300FA512C /* PreferencesController.m */,
 				99EF1FC110A0FB6800295ECF /* PFMoveApplication.m */,
 				99EF1FC210A0FB6800295ECF /* PFMoveApplication.h */,
+				3136EE5216AB84A8000F9E88 /* CRDAppDelegate.h */,
+				3136EE5316AB84A8000F9E88 /* CRDAppDelegate.m */,
 			);
 			name = CoRD;
 			sourceTree = "<group>";
@@ -696,6 +701,7 @@
 				3E4B67701019E2D700D3A911 /* CRDFilePathFormatter.m in Sources */,
 				99EF1FC310A0FB6900295ECF /* PFMoveApplication.m in Sources */,
 				982212001128A03900936745 /* ssl.c in Sources */,
+				3136EE5416AB84A8000F9E88 /* CRDAppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
