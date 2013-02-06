@@ -66,7 +66,7 @@
 
 - (id <CRDApplicationDelegate>)delegate
 {
-    return (id)[super delegate];
+    return (id <CRDApplicationDelegate>)[super delegate];
 }
 
 
