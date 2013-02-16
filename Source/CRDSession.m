@@ -1006,14 +1006,7 @@
 	if (fileContents == nil)
 		fileContents = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
     
-    NSArray *fileLines;
-    
-    if ([NSString respondsToSelector:@selector(componentsSeparatedByCharactersInSet:)])
-    {
-        fileLines = [fileContents componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
-    } else {
-        fileLines = [fileContents componentsSeparatedByString:@"\r\n"];
-    }
+    NSArray *fileLines = [fileContents componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
     
 	if (fileLines == nil)
 	{
