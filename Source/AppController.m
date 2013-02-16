@@ -21,7 +21,7 @@
 #import "PFMoveApplication.h"
 #import "CRDSession.h"
 #import "CRDSessionView.h"
-
+#import "CRDAppDelegate.h"
 #import "CRDServerList.h"
 #import "CRDTabView.h"
 #import "CRDShared.h"
@@ -37,7 +37,6 @@
 #pragma mark -
 
 @interface AppController (Private)
-	- (void)listUpdated;
 	- (void)saveInspectedServer;
 	- (void)updateInstToMatchInspector:(CRDSession *)inst;
 	- (void)setInspectorSettings:(CRDSession *)newSettings;
@@ -56,11 +55,8 @@
 	- (void)removeSavedServer:(CRDSession *)inst deleteFile:(BOOL)deleteFile;
 	- (void)sortSavedServersByStoredListPosition;
 	- (void)sortSavedServersAlphabetically;
-	- (void)storeSavedServerPositions;
-	- (void)validateControls;
 	- (void)loadSavedServers;
 	- (void)parseUrlQueryString:(NSString *)queryString forSession:(CRDSession *)session;
-	- (void)setDisplayMode:(CRDDisplayMode)displayMode;
 @end
 
 
@@ -76,23 +72,25 @@
 {
 	if (!(self = [super init]))
 		return nil;
-		
+
 	userDefaults = [NSUserDefaults standardUserDefaults];
 	
-	connectedServers = [[NSMutableArray alloc] init];
-	savedServers = [[NSMutableArray alloc] init];
+	_connectedServers = [[NSMutableArray alloc] init];
+	_savedServers = [[NSMutableArray alloc] init];
 	filteredServers = [[NSMutableArray alloc] init];
 	
 	filteredServersLabel = [[CRDLabelCell alloc] initTextCell:NSLocalizedString(@"Search Results", @"Servers list label 3")];
 	connectedServersLabel = [[CRDLabelCell alloc] initTextCell:NSLocalizedString(@"Active Sessions", @"Servers list label 1")];
 	savedServersLabel = [[CRDLabelCell alloc] initTextCell:NSLocalizedString(@"Saved Servers", @"Servers list label 2")];
+
+    
 	
 	return self;
 }
 - (void) dealloc
 {
-	[connectedServers release];
-	[savedServers release];
+	[_connectedServers release];
+	[_savedServers release];
 	[filteredServers release];
 	
 	[connectedServersLabel release];
@@ -106,19 +104,20 @@
 
 - (void)awakeFromNib
 {
+    ((CRDAppDelegate *)[NSApp delegate]).appController = self;
 	g_appController = self;
 #ifndef CORD_DEBUG_BUILD
 	PFMoveToApplicationsFolderIfNecessary();
 #endif
 	
-	[gui_unifiedWindow makeKeyAndOrderFront:self];
+	[self.self.gui_unifiedWindow makeKeyAndOrderFront:self];
 	
 	[[[NSApp windowsMenu] itemWithTitle:@"CoRD"] setKeyEquivalentModifierMask:(NSCommandKeyMask|NSAlternateKeyMask)];
 	[[[NSApp windowsMenu] itemWithTitle:@"CoRD"] setKeyEquivalent:@"1"];
 	
 	[self setDisplayMode:CRDDisplayUnified];
 	
-	[gui_unifiedWindow setAcceptsMouseMovedEvents:YES];
+	[self.self.gui_unifiedWindow setAcceptsMouseMovedEvents:YES];
 	windowCascadePoint = CRDWindowCascadeStart;
 	
 	// Assure that the app support directory exists
@@ -130,7 +129,7 @@
 	// Load servers from the saved servers directory
 	[self loadSavedServers];
 	
-	[gui_serverList deselectAll:nil];
+	[self.gui_serverList deselectAll:nil];
 	[self sortSavedServersByStoredListPosition];
 	[self storeSavedServerPositions];
 	
@@ -150,10 +149,10 @@
 	
 	// Register for drag operations
 	NSArray *types = @[CRDRowIndexPboardType, NSFilenamesPboardType, NSFilesPromisePboardType];
-	[gui_serverList registerForDraggedTypes:types];
+	[self.gui_serverList registerForDraggedTypes:types];
 
 	// Custom interface settings not accessable from IB
-	[gui_unifiedWindow setExcludedFromWindowsMenu:YES];
+	[self.self.gui_unifiedWindow setExcludedFromWindowsMenu:YES];
 
 	// Load a few user defaults that need to be loaded before anything is displayed
 	[self setDisplayMode:[[userDefaults objectForKey:CRDDefaultsDisplayMode] intValue]];
@@ -192,7 +191,7 @@
 	{
 		NSString *labelMatch = [arguments[@"l"] lowercaseString];
 		
-		for (CRDSession *savedServer in savedServers)
+		for (CRDSession *savedServer in self.savedServers)
 			if ([[savedServer.label lowercaseString] isLike:labelMatch])
 			{
 				newInst = savedServer;
@@ -232,10 +231,10 @@
 		if ([[newInst hostName] length] == 0)
 			return;
 		
-		[connectedServers addObject:newInst];
+		[self.connectedServers addObject:newInst];
 	}
 	
-	[gui_serverList deselectAll:self];
+	[self.gui_serverList deselectAll:self];
 	[self listUpdated];
 	[self connectInstance:newInst];
 }
@@ -260,11 +259,11 @@
 	else if (action == @selector(showServerInFinder:))
 		return (inst != nil);
 	else if (action == @selector(selectNext:))
-		return [gui_tabView numberOfItems] > 1;
+		return [self.gui_tabView numberOfItems] > 1;
 	else if (action == @selector(selectPrevious:))
-		return [gui_tabView numberOfItems] > 1;
+		return [self.gui_tabView numberOfItems] > 1;
 	else if (action == @selector(selectAdjacentSession:))
-		return [gui_tabView numberOfItems] > 1;
+		return [self.gui_tabView numberOfItems] > 1;
 	else if (action == @selector(takeScreenCapture:))
 		return viewedInst != nil;
 	else if (action == @selector(closeSessionOrWindow:))
@@ -283,7 +282,7 @@
 	}
 	else if (action == @selector(toggleDrawer:))
 	{
-		NSString *hideOrShow = CRDDrawerIsVisible(gui_serversDrawer)
+		NSString *hideOrShow = CRDDrawerIsVisible(self.gui_serversDrawer)
 				? NSLocalizedString(@"Hide Servers Drawer", @"View menu -> Show Servers Drawer")
 				: NSLocalizedString(@"Show Servers Drawer", @"View menu -> Hide Servers Drawer");
 		[item setTitle:hideOrShow];
@@ -300,13 +299,13 @@
 			return YES;
 		} else {
 			[item setTitle:NSLocalizedString(@"Start Full Screen", @"View menu -> Start Full Screen")];
-			return [connectedServers count] > 0;			
+			return [self.connectedServers count] > 0;			
 		}
 	}
 	else if (action == @selector(performServerMenuItem:))
 	{
 		CRDSession *representedInst = [item representedObject];
-		[item setState:([connectedServers indexOfObject:representedInst] != NSNotFound ? NSOnState : NSOffState)];	
+		[item setState:([self.connectedServers indexOfObject:representedInst] != NSNotFound ? NSOnState : NSOffState)];	
 	}
 	else if (action == @selector(performConnectOrDisconnect:))
 	{
@@ -323,9 +322,9 @@
 		NSString *localizedWindowed = NSLocalizedString(@"Toggle Windowed", @"View menu -> Toggle Windowed");
 		NSString *localizedUnified = NSLocalizedString(@"Toggle Unified", @"View menu -> Toggle Unified");
 		
-		if (displayMode == CRDDisplayUnified)
+		if (self.displayMode == CRDDisplayUnified)
 			[item setTitle:localizedWindowed];
-		else if (displayMode == CRDDisplayWindowed)
+		else if (self.displayMode == CRDDisplayWindowed)
 			[item setTitle:localizedUnified];
 	}
 	
@@ -337,10 +336,10 @@
 
 - (IBAction)addNewSavedServer:(id)sender
 {
-	if (![gui_unifiedWindow isVisible])
-		[gui_unifiedWindow makeKeyAndOrderFront:nil];
+	if (![self.self.gui_unifiedWindow isVisible])
+		[self.self.gui_unifiedWindow makeKeyAndOrderFront:nil];
 
-	if (!CRDDrawerIsVisible(gui_serversDrawer))
+	if (!CRDDrawerIsVisible(self.gui_serversDrawer))
 		[self toggleDrawer:nil visible:YES];
 		
 	CRDSession *inst = [[[CRDSession alloc] initWithBaseConnection] autorelease];
@@ -354,7 +353,7 @@
 	
 	[self addSavedServer:inst];
 	
-	[inst setValue:@([savedServers indexOfObjectIdenticalTo:inst]) forKey:@"preferredRowIndex"];
+	[inst setValue:@([self.savedServers indexOfObjectIdenticalTo:inst]) forKey:@"preferredRowIndex"];
 	
 	if (![gui_inspector isVisible])
 		[self toggleInspector:nil];
@@ -387,7 +386,7 @@
 		[self autosizeUnifiedWindowWithAnimation:NO];
 	}
 		
-	[gui_serverList deselectAll:self];
+	[self.gui_serverList deselectAll:self];
 	
 	[self removeSavedServer:inst deleteFile:YES];
 	
@@ -402,7 +401,7 @@
 	if (inst == nil)
 		return;
 		
-	if ( ([inst status] == CRDConnectionConnected) && (displayMode == CRDDisplayWindowed) )
+	if ( ([inst status] == CRDConnectionConnected) && (self.displayMode == CRDDisplayWindowed) )
 	{
 		[[inst window] makeKeyAndOrderFront:self];
 		[[inst window] makeFirstResponder:[inst view]];
@@ -528,32 +527,32 @@
 	if (_isFilteringSavedServers)
 		return;
 	
-	if ([connectedServers count] == 0)
+	if ([self.connectedServers count] == 0)
 		return;
 
 	CRDSession *inst = [self viewedServer];
 	if (inst == nil)
 	{
-		[gui_serverList selectRow:1];
+		[self.gui_serverList selectRow:1];
 		[self autosizeUnifiedWindow];
 		return;
 	}
 
-	if ([gui_tabView indexOfSelectedItem] == ([connectedServers count] - 1))
+	if ([self.gui_tabView indexOfSelectedItem] == ([self.connectedServers count] - 1))
 	{
-		if (!CRDDrawerIsVisible(gui_serversDrawer))
-			[gui_tabView selectItemAtIndex:0];
+		if (!CRDDrawerIsVisible(self.gui_serversDrawer))
+			[self.gui_tabView selectItemAtIndex:0];
 
-		[gui_serverList selectRow:1];
+		[self.gui_serverList selectRow:1];
 		[self autosizeUnifiedWindow];
 		return;
 	}
 
 	// There is a Selected Server and we don't need to loop, select the next.
-	if (!CRDDrawerIsVisible(gui_serversDrawer))
-		[gui_tabView selectItemAtIndex:([gui_tabView indexOfSelectedItem]+1)];
+	if (!CRDDrawerIsVisible(self.gui_serversDrawer))
+		[self.gui_tabView selectItemAtIndex:([self.gui_tabView indexOfSelectedItem]+1)];
 
-	[gui_serverList selectRow:(2 + [connectedServers indexOfObjectIdenticalTo:inst])];
+	[self.gui_serverList selectRow:(2 + [self.connectedServers indexOfObjectIdenticalTo:inst])];
 	[self autosizeUnifiedWindow];
 	
 }
@@ -563,31 +562,31 @@
 	if (_isFilteringSavedServers)
 		return;
 	
-	if ([connectedServers count] == 0)
+	if ([self.connectedServers count] == 0)
 		return;
 	
 	CRDSession *inst = [self viewedServer];
 	if (inst == nil)
 	{
-		[gui_serverList selectRow:[connectedServers count]];
+		[self.gui_serverList selectRow:[self.connectedServers count]];
 		[self autosizeUnifiedWindow];
 		return;
 	}
 	
-	if ( [gui_tabView indexOfSelectedItem] == 0 )
+	if ( [self.gui_tabView indexOfSelectedItem] == 0 )
 	{
-		if (!CRDDrawerIsVisible(gui_serversDrawer))
-			[gui_tabView selectItemAtIndex:([connectedServers count] - 1)];
+		if (!CRDDrawerIsVisible(self.gui_serversDrawer))
+			[self.gui_tabView selectItemAtIndex:([self.connectedServers count] - 1)];
 
-		[gui_serverList selectRow:([connectedServers count])];
+		[self.gui_serverList selectRow:([self.connectedServers count])];
 		[self autosizeUnifiedWindow];
 		return;
 	}
 	// There is a Selected Server and we don't need to loop, select the prev.
-	if (!CRDDrawerIsVisible(gui_serversDrawer))
-		[gui_tabView selectItemAtIndex:([gui_tabView indexOfSelectedItem]-1)];
+	if (!CRDDrawerIsVisible(self.gui_serversDrawer))
+		[self.gui_tabView selectItemAtIndex:([self.gui_tabView indexOfSelectedItem]-1)];
 
-	[gui_serverList selectRow:( [connectedServers indexOfObjectIdenticalTo:inst] ) ];
+	[self.gui_serverList selectRow:( [self.connectedServers indexOfObjectIdenticalTo:inst] ) ];
 	[self autosizeUnifiedWindow];
 }
 
@@ -606,12 +605,12 @@
 	if ([filenames count] <= 0)
 		return;
 	
-	[self application:[NSApplication sharedApplication] openFiles:filenames];
+	[self.appDelegate application:[NSApplication sharedApplication] openFiles:filenames];
 }
 
 - (IBAction)toggleDrawer:(id)sender
 {	
-	[self toggleDrawer:sender visible:!CRDDrawerIsVisible(gui_serversDrawer)];
+	[self toggleDrawer:sender visible:!CRDDrawerIsVisible(self.gui_serversDrawer)];
 	[gui_toolbar validateVisibleItems];
 }
 
@@ -619,10 +618,10 @@
 {
 	CRDLog(CRDLogLevelInfo, @"Starting Full Screen");
 	
-	if (displayMode == CRDDisplayFullscreen || ![connectedServers count] || ![self viewedServer])
+	if (self.displayMode == CRDDisplayFullscreen || ![self.connectedServers count] || ![self viewedServer])
 		return;
 	
-	displayModeBeforeFullscreen = displayMode;
+	self.displayModeBeforeFullscreen = self.displayMode;
 	
 	// Create the fullscreen window then move the tabview into it	
 	CRDSession *inst = [self viewedServer];
@@ -641,9 +640,9 @@
 		[self startUnified:self];
 	
     NSDisableScreenUpdates();
-    [[gui_tabView retain] autorelease];
-    [gui_tabView removeFromSuperviewWithoutNeedingDisplay];
-    [gui_unifiedWindow display];
+    [[self.gui_tabView retain] autorelease];
+    [self.gui_tabView removeFromSuperviewWithoutNeedingDisplay];
+    [self.gui_unifiedWindow display];
     NSEnableScreenUpdates();
 	
 	
@@ -655,14 +654,14 @@
 			@"OK", @"", @"");
 		return;
 	}
-	[gui_tabView enterFullScreenMode:[gui_unifiedWindow screen] withOptions:
+	[self.gui_tabView enterFullScreenMode:[self.gui_unifiedWindow screen] withOptions:
             @{NSFullScreenModeAllScreens: @NO,
             NSFullScreenModeApplicationPresentationOptions: @(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)}];
             @{NSFullScreenModeAllScreens: @NO,
             NSFullScreenModeApplicationPresentationOptions: @((NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar))};
 
-	gui_tabView.window.delegate = self;
-	[[gui_tabView window] setAcceptsMouseMovedEvents:YES];
+	self.gui_tabView.window.delegate = self;
+	[[self.gui_tabView window] setAcceptsMouseMovedEvents:YES];
 	
 	NSEnableScreenUpdates(); // Disable may have been used for slightly deferred fullscreen (see completeConnection:)
     [self setDisplayMode:CRDDisplayFullscreen];
@@ -678,23 +677,23 @@
 	// Misc preparation
 	[self setDisplayMode:CRDDisplayUnified];
 	[self autosizeUnifiedWindowWithAnimation:NO];
-	[[gui_tabView window] setAcceptsMouseMovedEvents:NO];
+	[[self.gui_tabView window] setAcceptsMouseMovedEvents:NO];
 	
-    [gui_tabView exitFullScreenModeWithOptions:nil];
+    [self.gui_tabView exitFullScreenModeWithOptions:nil];
 	
-	[gui_tabView setFrame:CRDRectFromSize([[gui_unifiedWindow contentView] frame].size)];
+	[self.gui_tabView setFrame:CRDRectFromSize([[self.gui_unifiedWindow contentView] frame].size)];
 	
-	[[gui_unifiedWindow contentView] addSubview:gui_tabView];	
-	[gui_unifiedWindow display];
-	gui_unifiedWindow.delegate = self;
+	[[self.gui_unifiedWindow contentView] addSubview:self.gui_tabView];	
+	[self.gui_unifiedWindow display];
+	self.gui_unifiedWindow.delegate = self;
 	
-	if (displayModeBeforeFullscreen == CRDDisplayWindowed)
+	if (self.displayModeBeforeFullscreen == CRDDisplayWindowed)
 		[self startWindowed:self];
 		
-	[self setDisplayMode:displayModeBeforeFullscreen];
+	[self setDisplayMode:self.displayModeBeforeFullscreen];
 	
-	if (displayMode == CRDDisplayUnified)
-		[gui_unifiedWindow makeKeyAndOrderFront:nil];
+	if (self.displayMode == CRDDisplayUnified)
+		[self.gui_unifiedWindow makeKeyAndOrderFront:nil];
 	else
 		[[[self selectedServer] window] makeKeyAndOrderFront:nil];
 }
@@ -711,9 +710,9 @@
 // Toggles between Windowed and Unified modes
 - (IBAction)performUnified:(id)sender
 {
-	if (displayMode == CRDDisplayUnified)
+	if (self.displayMode == CRDDisplayUnified)
 		[self startWindowed:sender];
-	else if (displayMode == CRDDisplayWindowed)
+	else if (self.displayMode == CRDDisplayWindowed)
 		[self startUnified:sender];
 	
 	[gui_toolbar validateVisibleItems];
@@ -721,18 +720,18 @@
 
 - (IBAction)startWindowed:(id)sender
 {
-	if (displayMode == CRDDisplayWindowed)
+	if (self.displayMode == CRDDisplayWindowed)
 		return;
 	
 	[self setDisplayMode:CRDDisplayWindowed];
 	windowCascadePoint = CRDWindowCascadeStart;
 	
-	if ([connectedServers count] == 0)
+	if ([self.connectedServers count] == 0)
 		return;
 	
-	[gui_tabView removeAllItems];
+	[self.gui_tabView removeAllItems];
 	
-	for (CRDSession *inst in connectedServers)
+	for (CRDSession *inst in self.connectedServers)
 		[self createWindowForInstance:inst];
 		
 	[self autosizeUnifiedWindow];
@@ -740,23 +739,23 @@
 
 - (IBAction)startUnified:(id)sender
 {
-	if (displayMode == CRDDisplayUnified || displayMode == CRDDisplayFullscreen)
+	if (self.displayMode == CRDDisplayUnified || self.displayMode == CRDDisplayFullscreen)
 		return;
 		
 	[self setDisplayMode:CRDDisplayUnified];
 	
-	if (![connectedServers count])
+	if (![self.connectedServers count])
 		return;
 	
 	
-	for (CRDSession *inst in connectedServers)
+	for (CRDSession *inst in self.connectedServers)
 	{
 		[inst destroyWindow];
-		[inst createUnified:!CRDPreferenceIsEnabled(CRDPrefsScaleSessions) enclosure:[gui_tabView frame]];
-		[gui_tabView addItem:inst];
+		[inst createUnified:!CRDPreferenceIsEnabled(CRDPrefsScaleSessions) enclosure:[self.gui_tabView frame]];
+		[self.gui_tabView addItem:inst];
 	}	
 	
-	[gui_tabView selectLastItem:self];
+	[self.gui_tabView selectLastItem:self];
 	
 	[self autosizeUnifiedWindowWithAnimation:(sender != self)];
 }
@@ -785,7 +784,7 @@
 	
 	
 	// Check if hostname is already in saved servers...
-	for (id server in savedServers)
+	for (id server in self.savedServers)
 		if ([[[server label] lowercaseString] isEqualToString:[hostname lowercaseString]]) {
 			[self connectInstance:server];
 			return;
@@ -807,13 +806,13 @@
 	if (isConsoleSession)
 		[newInst setValue:@(isConsoleSession) forKey:@"consoleSession"];
 	
-	[connectedServers addObject:newInst];
-	[gui_serverList deselectAll:self];
+	[self.connectedServers addObject:newInst];
+	[self.gui_serverList deselectAll:self];
 	[self listUpdated];
 	[self connectInstance:newInst];
 
 	if (!_isFilteringSavedServers)
-		[gui_serverList selectRow:(1+[connectedServers indexOfObject:newInst])];
+		[self.gui_serverList selectRow:(1+[self.connectedServers indexOfObject:newInst])];
 	
 	
 	NSMutableArray *recent = [NSMutableArray arrayWithArray:[userDefaults arrayForKey:CRDDefaultsQuickConnectServers]];
@@ -860,18 +859,18 @@
 		return;
 	
 	// Select the Activated Server in the Server List...
-	[gui_serverList selectRow:([savedServers indexOfObject:inst] + 2 + [connectedServers count])];
+	[self.gui_serverList selectRow:([self.savedServers indexOfObject:inst] + 2 + [self.connectedServers count])];
 		
-	if ([connectedServers indexOfObject:inst] != NSNotFound)
+	if ([self.connectedServers indexOfObject:inst] != NSNotFound)
 	{
 		// connected server, switch to it
-		if (displayMode == CRDDisplayUnified)
+		if (self.displayMode == CRDDisplayUnified)
 		{
-			[gui_tabView selectItem:inst];
-			[gui_unifiedWindow makeFirstResponder:[inst view]];
+			[self.gui_tabView selectItem:inst];
+			[self.gui_unifiedWindow makeFirstResponder:[inst view]];
 			[self autosizeUnifiedWindow];
 		}
-		else if (displayMode == CRDDisplayWindowed)
+		else if (self.displayMode == CRDDisplayWindowed)
 		{
 			[[inst window] makeKeyAndOrderFront:nil];
 			[[inst window] makeFirstResponder:[inst view]];
@@ -902,7 +901,7 @@
 	if ([inst label] != nil)
 		[savePanel setNameFieldStringValue:[[inst label] stringByAppendingPathExtension:@"rdp"]];
 	
-	[savePanel beginSheetModalForWindow:gui_unifiedWindow completionHandler:^(NSInteger result) {		
+	[savePanel beginSheetModalForWindow:self.gui_unifiedWindow completionHandler:^(NSInteger result) {		
 		if (result != NSOKButton)
 			return;
 			
@@ -932,8 +931,8 @@
 	
 	NSUInteger serverIndex;
 	
-	if ( (serverIndex = [savedServers indexOfObject:selectedServer]) == NSNotFound)
-		serverIndex = [savedServers count]-1;
+	if ( (serverIndex = [self.savedServers indexOfObject:selectedServer]) == NSNotFound)
+		serverIndex = [self.savedServers count]-1;
 	
 	CRDSession *duplicate = [[selectedServer copy] autorelease];
 	[duplicate setFilename:CRDFindAvailableFileName([AppController savedServersPath], [[duplicate label] stringByDeletingFileSystemCharacters], @".rdp")];
@@ -957,8 +956,8 @@
 		
 		NSString *searchCompareString = [NSString stringWithFormat:@"*%@*", [[searchString strip] lowercaseString]];
 
-		[filteredServers addObjectsFromArray:connectedServers];
-		[filteredServers addObjectsFromArray:savedServers];
+		[filteredServers addObjectsFromArray:self.connectedServers];
+		[filteredServers addObjectsFromArray:self.savedServers];
 		[filteredServers filterUsingPredicate:[NSPredicate predicateWithFormat:@"(label like[c] %@) OR (hostName like[c] %@) OR (username like[c] %@) OR (domain like[c] %@)",searchCompareString,searchCompareString,searchCompareString,searchCompareString]];
 	}
 	
@@ -967,7 +966,7 @@
 		[self listUpdated];
 				
 		if ([filteredServers count])
-			[gui_serverList selectRow:1];
+			[self.gui_serverList selectRow:1];
 	}
 }
 
@@ -1012,18 +1011,18 @@
 {
 	NSWindow *visibleWindow = [NSApp mainWindow];
 	
-	if ([gui_tabView isInFullScreenMode])
+	if ([self.gui_tabView isInFullScreenMode])
 		[self endFullscreen:sender];
 	else if ( (visibleWindow == gui_preferencesWindow) || (visibleWindow == gui_inspector) )
 		[visibleWindow orderOut:nil];
-	else if (visibleWindow == gui_unifiedWindow)
+	else if (visibleWindow == self.gui_unifiedWindow)
 	{
-		if ((displayMode == CRDDisplayUnified) && [connectedServers count])
+		if ((self.displayMode == CRDDisplayUnified) && [self.connectedServers count])
 			[self performStop:nil];
 		else 
-			[gui_unifiedWindow orderOut:nil];
+			[self.gui_unifiedWindow orderOut:nil];
 	}
-	else if (displayMode == CRDDisplayWindowed)
+	else if (self.displayMode == CRDDisplayWindowed)
 		[visibleWindow performClose:nil];
 	else
 		[visibleWindow orderOut:nil];
@@ -1038,14 +1037,14 @@
 	CRDSession *inst = [self selectedServer];
 	CRDSession *viewedInst = [self viewedServer];
 	
-	if (itemTag == 1 && (![gui_unifiedWindow isKeyWindow]))
+	if (itemTag == 1 && (![self.gui_unifiedWindow isKeyWindow]))
 		return NO;
 	else if (itemTag == 3)
-		return ([connectedServers count] > 0);
-	else if ((itemTag  == 4) && (displayMode != CRDDisplayFullscreen))
+		return ([self.connectedServers count] > 0);
+	else if ((itemTag  == 4) && (self.displayMode != CRDDisplayFullscreen))
 	{
-		NSString *label = (displayMode == CRDDisplayUnified) ? @"Windowed" : @"Unified";
-		NSString *localizedLabel = (displayMode == CRDDisplayUnified) 
+		NSString *label = (self.displayMode == CRDDisplayUnified) ? @"Windowed" : @"Unified";
+		NSString *localizedLabel = (self.displayMode == CRDDisplayUnified) 
 				? NSLocalizedString(@"Windowed", @"Display Mode toolbar item -> Windowed label")
 				: NSLocalizedString(@"Unified", @"Display Mode toolbar item -> Unified label");
 				
@@ -1054,7 +1053,7 @@
 	}
 	else if (itemTag == 5)
 	{
-		if (![gui_unifiedWindow isKeyWindow])
+		if (![self.gui_unifiedWindow isKeyWindow])
 			return NO;
 		
 		NSString *label = ([inst status] == CRDConnectionConnecting) ? @"Stop" : @"Disconnect";
@@ -1064,138 +1063,15 @@
 		
 		[toolbarItem setImage:[NSImage imageNamed:label]];
 		[toolbarItem setValue:localizedLabel forKey:@"label"];
-		return ([inst status] == CRDConnectionConnecting) || ( (viewedInst != nil) && (displayMode == CRDDisplayUnified) );
+		return ([inst status] == CRDConnectionConnecting) || ( (viewedInst != nil) && (self.displayMode == CRDDisplayUnified) );
 	}
 	else if (itemTag == 6 || itemTag == 7)
 	{
-		return ([connectedServers count] > 1);
+		return ([self.connectedServers count] > 1);
 	}
 	return YES;
 }
-
-
-#pragma mark -
-#pragma mark NSApplication delegate methods
-
-- (BOOL)application:(NSApplication *)sender openFile:(NSString *)filename
-{
-	[self application:sender openFiles:@[filename]];
-	return YES;
-}
-
-- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
-{
-	for ( id file in filenames )
-	{
-		if ([[[file pathExtension] lowercaseString] isEqualTo:@"rdp"]) {
-			CRDSession *inst = [[CRDSession alloc] initWithPath:file];
-			
-			if (inst != nil)
-			{
-				[inst setIsTemporary:YES];
-				[connectedServers addObject:inst];
-				[gui_serverList deselectAll:self];
-				[self listUpdated];
-				[self connectInstance:inst];	
-			}
-		}
-		else if ([[[file pathExtension] lowercaseString] isEqualTo:@"msrcincident"]) {
-			CRDLog(CRDLogLevelInfo, @"Loading MSRCIncident File: %@", [[NSURL fileURLWithPath:file] absoluteString]);
-			NSXMLDocument *incidentFile = [[NSXMLDocument alloc] initWithContentsOfURL:[NSURL fileURLWithPath:file] options:NSXMLDocumentTidyXML error:nil];
-			CRDLog(CRDLogLevelInfo, @"File: %@, Version: %i", [incidentFile URI], [incidentFile version]);
-			NSXMLElement *rootElement = [incidentFile rootElement];
-			for (id child in [rootElement children])
-				CRDLog(CRDLogLevelInfo,@"Child Name: %@",[child name]);
-			[[NSAlert alertWithMessageText:@"Coming Soon!" defaultButton:@"OK" alternateButton:nil otherButton:nil informativeTextWithFormat:@"Support for MS Incident files coming soon!"] runModal];
-		}
-	}
-}
-
-- (BOOL)applicationShouldOpenUntitledFile:(NSApplication *)theApplication
-{
-    return NO;
-}
-
-
-- (void)applicationWillTerminate:(NSNotification *)aNotification
-{
-	CRDLog(CRDLogLevelInfo,@"CoRD is Terminating, Cleaning Up");
-	
-	_appIsTerminating = YES;
-	
-	CRDLog(CRDLogLevelDebug, @"Firing tableViewSelectionDidChange to force inspector to update");
-	[self tableViewSelectionDidChange:nil];
-	
-	// Save current state to user defaults
-	CRDLog(CRDLogLevelDebug, @"Saving current state to user defaults");
-	[userDefaults setInteger:[gui_serversDrawer edge] forKey:CRDDefaultsUnifiedDrawerSide];
-	[userDefaults setBool:CRDDrawerIsVisible(gui_serversDrawer) forKey:CRDDefaultsUnifiedDrawerShown];
-	[userDefaults setFloat:[gui_serversDrawer contentSize].width forKey:CRDDefaultsUnifiedDrawerWidth];
-	
-	NSDisableScreenUpdates();
-	
-	// Clean up the fullscreen window
-	if (displayMode == CRDDisplayFullscreen)
-	{
-		CRDLog(CRDLogLevelDebug, @"Cleaning up Fullscreen Window");
-		[gui_tabView exitFullScreenModeWithOptions:nil];
-		[self setDisplayMode:displayModeBeforeFullscreen];
-	}
-	[userDefaults setInteger:displayMode forKey:CRDDefaultsDisplayMode];
-	
-	// Disconnect all connected servers
-	CRDLog(CRDLogLevelInfo, @"Disconnecting any connected severs");
-	for ( CRDSession *inst in connectedServers )
-		[self disconnectInstance:inst];
-	
-	[gui_unifiedWindow orderOut:nil];
-	
-	NSEnableScreenUpdates();
-	
-	// Flush each saved server to file (so that the perferred row will be saved)
-	CRDLog(CRDLogLevelDebug, @"Flush and store servers");
-	[self storeSavedServerPositions];
-	for (CRDSession *inst in savedServers)
-		[inst flushChangesToFile];	
-}
-
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification
-{	
-	// Make sure the drawer is in the user-saved position. Do it here (not awakeFromNib) so that it displays nicely
-	[gui_serversDrawer setPreferredEdge:[userDefaults integerForKey:CRDDefaultsUnifiedDrawerSide]];
-
-	float width = [userDefaults floatForKey:CRDDefaultsUnifiedDrawerWidth];
-	float height = [gui_serversDrawer contentSize].height;
-	if (width > 0)
-		[gui_serversDrawer setContentSize:NSMakeSize(width, height)];
-		
-	if ([userDefaults boolForKey:CRDDefaultsUnifiedDrawerShown])
-		[gui_serversDrawer openOnEdge:[userDefaults integerForKey:CRDDefaultsUnifiedDrawerSide]];
-	
-	[self validateControls];
-}
-
-- (BOOL)applicationShouldHandleReopen:(NSApplication *)theApplication hasVisibleWindows:(BOOL)hasVisibleWindows
-{
-	if (!hasVisibleWindows)
-		[gui_unifiedWindow makeKeyAndOrderFront:nil];
-	
-	return YES;
-}
-
-- (NSResponder *)application:(NSApplication *)application shouldForwardEvent:(NSEvent *)ev
-{
-	CRDSessionView *viewedSessionView = [[self viewedServer] view];
-	NSWindow *viewedSessionWindow = [viewedSessionView window];
-	
-	BOOL shouldForward = YES;
-	
-	shouldForward &= ([ev type] == NSKeyDown) || ([ev type] == NSKeyUp) || ([ev type] == NSFlagsChanged);
-	shouldForward &= ([viewedSessionWindow firstResponder] == viewedSessionView) && [viewedSessionWindow isKeyWindow] && ([viewedSessionWindow isMainWindow] || ([self displayMode] == CRDDisplayFullscreen));
-	
-	return shouldForward ? viewedSessionView : nil;
-}
-
+//Application delegates were here.
 #pragma mark -
 #pragma mark NSTableDataSource methods
 
@@ -1204,7 +1080,7 @@
 	if (_isFilteringSavedServers)
 		return 1 + [filteredServers count];
 	else
-		return 2 + [connectedServers count] + [savedServers count];		
+		return 2 + [self.connectedServers count] + [self.savedServers count];
 }
 
 - (id)tableView:(NSTableView *)aTableView objectValueForTableColumn:(NSTableColumn *)aTableColumn row:(NSInteger)rowIndex
@@ -1219,7 +1095,7 @@
 
 	if (rowIndex == 0)
 		return [connectedServersLabel attributedStringValue];
-	else if (rowIndex == [connectedServers count] + 1)
+	else if (rowIndex == [self.connectedServers count] + 1)
 		return [savedServersLabel attributedStringValue];
 	
 	return [self serverInstanceForRow:rowIndex];
@@ -1228,7 +1104,7 @@
 - (NSDragOperation)tableView:(NSTableView*)tv validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)op
 {	
 	NSPasteboard *pb = [info draggingPasteboard];
-	NSString *pbDataType = [gui_serverList pasteboardDataType:pb];
+	NSString *pbDataType = [self.gui_serverList pasteboardDataType:pb];
 	
 	if (_isFilteringSavedServers)
 		return NO;
@@ -1249,7 +1125,7 @@
 - (BOOL)tableView:(NSTableView *)aTableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)operation
 {
 	NSPasteboard *pb = [info draggingPasteboard];
-	NSString *pbDataType = [gui_serverList pasteboardDataType:pb];
+	NSString *pbDataType = [self.gui_serverList pasteboardDataType:pb];
 	int newRow = -1;
 	
 	if (_isFilteringSavedServers)
@@ -1266,10 +1142,10 @@
 		NSArray *rdpFiles = CRDFilterFilesByType(files, @[@"rdp"]);
 		
 		CRDSession *inst;
-		NSUInteger insertIndex = [savedServers indexOfObject:[self serverInstanceForRow:row]];
+		NSUInteger insertIndex = [self.savedServers indexOfObject:[self serverInstanceForRow:row]];
 		
 		if (insertIndex == NSNotFound)
-			insertIndex = [savedServers count];
+			insertIndex = [self.savedServers count];
 		
 		for (NSString *file in rdpFiles)
 		{
@@ -1287,7 +1163,7 @@
 		return YES;
 	}
 	
-	if ([info draggingSource] == gui_serverList)
+	if ([info draggingSource] == self.gui_serverList)
 	{
 		[self reinsertHeldSavedServer:newRow];
 		return YES;
@@ -1317,7 +1193,7 @@
 	if (_isFilteringSavedServers)
 		return [filteredServers indexOfObject:[self serverInstanceForRow:rowIndex]] != NSNotFound;
 	else
-		return [savedServers indexOfObject:[self serverInstanceForRow:rowIndex]] != NSNotFound;
+		return [self.savedServers indexOfObject:[self serverInstanceForRow:rowIndex]] != NSNotFound;
 }
 
 - (BOOL)tableView:(NSTableView *)aTableView canDropAboveRow:(NSUInteger)rowIndex
@@ -1325,7 +1201,7 @@
 	if (_isFilteringSavedServers)
 		return NO;
 	else
-		return rowIndex >= 2 + [connectedServers count];
+		return rowIndex >= 2 + [self.connectedServers count];
 }
 
 
@@ -1334,7 +1210,7 @@
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
 {
     TRACE_FUNC;
-	NSInteger selectedRow = [gui_serverList selectedRow];
+	NSInteger selectedRow = [self.gui_serverList selectedRow];
 	CRDSession *inst = [self selectedServer];
 	
 	CRDLog(CRDLogLevelDebug,@"NSTableView Delegate - Selection Changed Server: %@ Row Index: %i", [inst label], selectedRow);
@@ -1342,7 +1218,7 @@
 	[self validateControls];
 	
 	// If there's no selection, clear the inspector
-	if (selectedRow < 1 || (selectedRow == [connectedServers count] + 1))
+	if (selectedRow < 1 || (selectedRow == [self.connectedServers count] + 1))
 	{
 		[self setInspectorSettings:nil];	
 		inspectedServer = nil;
@@ -1355,7 +1231,7 @@
         [self saveInspectedServer];
     }
 	
-	if (_appIsTerminating)
+	if (self.appDelegate.appIsTerminating)
 	{
 		[self setInspectorEnabled:NO];
 		return;
@@ -1371,14 +1247,14 @@
 	if (_isFilteringSavedServers || !inst || !aNotification)
 		return;
 	
-    if (([inst status] == CRDConnectionConnected) && ([gui_tabView indexOfItem:inst] != NSNotFound)) 
+    if (([inst status] == CRDConnectionConnected) && ([self.gui_tabView indexOfItem:inst] != NSNotFound)) 
     {			
-        [gui_tabView selectItem:inspectedServer];
-        [gui_unifiedWindow makeFirstResponder:[[self viewedServer] view]];
+        [self.gui_tabView selectItem:inspectedServer];
+        [self.gui_unifiedWindow makeFirstResponder:[[self viewedServer] view]];
         [self autosizeUnifiedWindow];
     }
     
-    if ( ([inst status] == CRDConnectionDisconnecting || [inst status] == CRDConnectionClosed) && (displayMode == CRDDisplayFullscreen) )
+    if ( ([inst status] == CRDConnectionDisconnecting || [inst status] == CRDConnectionClosed) && (self.displayMode == CRDDisplayFullscreen) )
         [self selectNext:self];
 }
 
@@ -1387,7 +1263,7 @@
 	if (_isFilteringSavedServers)
 		return rowIndex >= 1;
 	else
-		return (rowIndex >= 1) && (rowIndex != [connectedServers count] + 1);
+		return (rowIndex >= 1) && (rowIndex != [self.connectedServers count] + 1);
 }
 
 - (CGFloat)tableView:(NSTableView *)tableView heightOfRow:(NSInteger)row
@@ -1400,7 +1276,7 @@
 		return [[[self serverInstanceForRow:row] cellRepresentation] cellSize].height;			
 	}
 
-	if (!row || row == [connectedServers count] + 1)
+	if (!row || row == [self.connectedServers count] + 1)
 		return [connectedServersLabel cellSize].height;
 	
 	return [[[self serverInstanceForRow:row] cellRepresentation] cellSize].height;	
@@ -1418,7 +1294,7 @@
 	
 	if (row == 0)
 		return connectedServersLabel;
-	else if (row == [connectedServers count] + 1)
+	else if (row == [self.connectedServers count] + 1)
 		return savedServersLabel;
 	
 	return [[self serverInstanceForRow:row] cellRepresentation];
@@ -1432,7 +1308,7 @@
 #pragma mark Other table view related
 - (void)cellNeedsDisplay:(NSCell *)cell
 {
-	[gui_serverList setNeedsDisplay:YES];
+	[self.gui_serverList setNeedsDisplay:YES];
 }
 
 
@@ -1448,14 +1324,14 @@
 
 		[self validateControls];
 		
-		if ( ([self viewedServer] == nil) && CRDDrawerIsVisible(gui_serversDrawer))
-			[gui_unifiedWindow makeFirstResponder:gui_serverList];
+		if ( ([self viewedServer] == nil) && CRDDrawerIsVisible(self.gui_serversDrawer))
+			[self.gui_unifiedWindow makeFirstResponder:self.gui_serverList];
 	}
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)sender
 {
-	if ( (([sender object] == gui_unifiedWindow) && (displayMode == CRDDisplayUnified)) ||  (displayMode == CRDDisplayFullscreen) )
+	if ( (([sender object] == self.gui_unifiedWindow) && (self.displayMode == CRDDisplayUnified)) ||  (self.displayMode == CRDDisplayFullscreen) )
 	{
 		[[self viewedServer] announceNewClipboardData];
 	}
@@ -1463,7 +1339,7 @@
 
 - (void)windowDidResignKey:(NSNotification *)sender
 {
-	if ( (([sender object] == gui_unifiedWindow) && (displayMode == CRDDisplayUnified)) || (displayMode == CRDDisplayFullscreen) )
+	if ( (([sender object] == self.gui_unifiedWindow) && (self.displayMode == CRDDisplayUnified)) || (self.displayMode == CRDDisplayFullscreen) )
 	{
 		[[self viewedServer] requestRemoteClipboardData];
 	}
@@ -1472,10 +1348,10 @@
 // Implement unified window 'snap' to real size
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)proposedFrameSize
 {
-	if ( (sender == gui_unifiedWindow) && (displayMode == CRDDisplayUnified) && ([self viewedServer] != nil) )
+	if ( (sender == self.gui_unifiedWindow) && (self.displayMode == CRDDisplayUnified) && ([self viewedServer] != nil) )
 	{
 		NSSize realSize = [[[self viewedServer] view] bounds].size;
-		realSize.height += [gui_unifiedWindow frame].size.height - [[gui_unifiedWindow contentView] frame].size.height;
+		realSize.height += [self.gui_unifiedWindow frame].size.height - [[self.gui_unifiedWindow contentView] frame].size.height;
 		if ( (realSize.width-proposedFrameSize.width <= CRDWindowSnapSize) && (realSize.height-proposedFrameSize.height <= CRDWindowSnapSize) )
 		{
 			return realSize;	
@@ -1490,9 +1366,9 @@
 	
 	if (!inst)
 	{
-		[gui_unifiedWindow saveFrameUsingName:@"UnifiedWindowFrame"];	
+		[self.gui_unifiedWindow saveFrameUsingName:@"UnifiedWindowFrame"];	
 	}
-	CRDLog(CRDLogLevelDebug, @"Window Did Move; Origin-x: %f Origin-y: %f",[gui_unifiedWindow frame].origin.x, [gui_unifiedWindow frame].origin.y);
+	CRDLog(CRDLogLevelDebug, @"Window Did Move; Origin-x: %f Origin-y: %f",[self.gui_unifiedWindow frame].origin.x, [self.gui_unifiedWindow frame].origin.y);
 }
 
 - (void)windowDidResize:(NSNotification *)notification
@@ -1501,10 +1377,10 @@
 	
 	if (!inst)
 	{
-		[gui_unifiedWindow saveFrameUsingName:@"UnifiedWindowFrame"];	
+		[self.gui_unifiedWindow saveFrameUsingName:@"UnifiedWindowFrame"];	
 	}
 
-	CRDLog(CRDLogLevelDebug, @"Window Did Resize; Width: %f Height: %f",[gui_unifiedWindow frame].size.width, [gui_unifiedWindow frame].size.height);
+	CRDLog(CRDLogLevelDebug, @"Window Did Resize; Width: %f Height: %f",[self.gui_unifiedWindow frame].size.width, [self.gui_unifiedWindow frame].size.height);
 }
 
 #pragma mark -
@@ -1524,20 +1400,20 @@
 	
 	if (commandSelector == @selector(moveUp:))
 	{
-		if ([gui_serverList selectedRow] > 1) 
-			[gui_serverList selectRow:([gui_serverList selectedRow] - 1)];
+		if ([self.gui_serverList selectedRow] > 1) 
+			[self.gui_serverList selectRow:([self.gui_serverList selectedRow] - 1)];
 		else
-			[gui_serverList selectRow:([gui_serverList numberOfRows] - 1)];
+			[self.gui_serverList selectRow:([self.gui_serverList numberOfRows] - 1)];
 		
 		return YES;
 	}
 	
 	if (commandSelector == @selector(moveDown:))
 	{
-		if ( [gui_serverList selectedRow] < ([gui_serverList numberOfRows] - 1) ) 
-			[gui_serverList selectRow:([gui_serverList selectedRow] + 1)];
+		if ( [self.gui_serverList selectedRow] < ([self.gui_serverList numberOfRows] - 1) ) 
+			[self.gui_serverList selectRow:([self.gui_serverList selectedRow] + 1)];
 		else
-			[gui_serverList selectRow:1];
+			[self.gui_serverList selectRow:1];
 
 		return YES;
 	}
@@ -1567,11 +1443,11 @@
 // Assures that the passed instance is disconnected and removed from view. Main thread only.
 - (void)disconnectInstance:(CRDSession *)inst
 {
-	if (!inst || [connectedServers indexOfObjectIdenticalTo:inst] == NSNotFound)
+	if (!inst || [self.connectedServers indexOfObjectIdenticalTo:inst] == NSNotFound)
 		return;
 		
-	if (displayMode != CRDDisplayWindowed)
-		[gui_tabView removeItem:inst];
+	if (self.displayMode != CRDDisplayWindowed)
+		[self.gui_tabView removeItem:inst];
 	
 	if ([inst status] == CRDConnectionConnected)
 		[inst disconnect];
@@ -1584,7 +1460,7 @@
 	
 
 	[[inst retain] autorelease];
-	[connectedServers removeObject:inst];
+	[self.connectedServers removeObject:inst];
 	
 	if ([inst isTemporary])
 	{
@@ -1596,7 +1472,7 @@
 		}
 		
 		if ([inst isEqualTo:[self selectedServer]])
-			[gui_serverList deselectAll:self];
+			[self.gui_serverList deselectAll:self];
 	}
 	else
 	{
@@ -1609,32 +1485,32 @@
 		}
 		
 		// Re-insert into saved server list
-		int preferredRow = MIN([savedServers count], [[inst valueForKey:@"preferredRowIndex"] intValue]);
+		int preferredRow = MIN([self.savedServers count], [[inst valueForKey:@"preferredRowIndex"] intValue]);
 		[self addSavedServer:inst atIndex:preferredRow select:YES];
 	}
 
 	[self listUpdated];
 		
-	if ((displayMode == CRDDisplayFullscreen) && ![gui_tabView numberOfItems])
+	if ((self.displayMode == CRDDisplayFullscreen) && ![self.gui_tabView numberOfItems])
 	{
 		CRDLog(CRDLogLevelInfo, @"Disconnecting while in Full Screen");
 		[self autosizeUnifiedWindowWithAnimation:YES];
 		[self endFullscreen:self];
 	}
-	else if (displayMode == CRDDisplayUnified)
+	else if (self.displayMode == CRDDisplayUnified)
 	{
 		[self autosizeUnifiedWindowWithAnimation:YES];
 		
-		if (![self viewedServer] && CRDDrawerIsVisible(gui_serversDrawer))
-			[gui_unifiedWindow makeFirstResponder:gui_serverList];
+		if (![self viewedServer] && CRDDrawerIsVisible(self.gui_serversDrawer))
+			[self.gui_unifiedWindow makeFirstResponder:self.gui_serverList];
 	}
-	else if (displayMode == CRDDisplayWindowed)
+	else if (self.displayMode == CRDDisplayWindowed)
 	{
-		if (![connectedServers count] && ![gui_unifiedWindow isVisible])
-			[gui_unifiedWindow makeKeyAndOrderFront:nil];
+		if (![self.connectedServers count] && ![self.gui_unifiedWindow isVisible])
+			[self.gui_unifiedWindow makeKeyAndOrderFront:nil];
 	}
 	
-	if (![inst isEqualTo:[self selectedServer]] || ![gui_unifiedWindow isKeyWindow])
+	if (![inst isEqualTo:[self selectedServer]] || ![self.gui_unifiedWindow isKeyWindow])
 	{
 		[NSApp requestUserAttention:NSInformationalRequest];
 	}
@@ -1648,8 +1524,8 @@
 	
 	[inst cancelConnection];
 	
-	[gui_serverList deselectAll:nil];
-	[connectedServers removeObject:inst];
+	[self.gui_serverList deselectAll:nil];
+	[self.connectedServers removeObject:inst];
 	inspectedServer = nil;
 	[self listUpdated];
 }
@@ -1677,7 +1553,7 @@
 - (void)holdSavedServer:(NSInteger)row
 {
 	CRDSession *inst = [self serverInstanceForRow:row];
-	NSUInteger index = [savedServers indexOfObjectIdenticalTo:inst];
+	NSUInteger index = [self.savedServers indexOfObjectIdenticalTo:inst];
 	
 	if (!inst || (index == NSNotFound))
 		return;
@@ -1686,12 +1562,12 @@
 	dumpedInstance = [inst retain];
 	[inst setValue:@(index) forKey:@"preferredRowIndex"];
 	
-	[savedServers removeObject:inst];
+	[self.savedServers removeObject:inst];
 }
 
 - (void)reinsertHeldSavedServer:(NSInteger)intoRow
 {
-	NSUInteger index = (intoRow == -1) ? [[dumpedInstance valueForKey:@"preferredRowIndex"] intValue] : (intoRow - 2 - [connectedServers count]);
+	NSUInteger index = (intoRow == -1) ? [[dumpedInstance valueForKey:@"preferredRowIndex"] intValue] : (intoRow - 2 - [self.connectedServers count]);
 	[self addSavedServer:dumpedInstance atIndex:index select:dumpedInstanceWasSelected];
 	[dumpedInstance setValue:@(index) forKey:@"preferredRowIndex"];
 }
@@ -1701,13 +1577,13 @@
 
 - (BOOL)mainWindowIsFocused
 {
-	return [gui_unifiedWindow isMainWindow] && [gui_unifiedWindow isKeyWindow];
+	return [self.gui_unifiedWindow isMainWindow] && [self.gui_unifiedWindow isKeyWindow];
 }
 
 // xxx probably should be private
 - (CRDSession *)serverInstanceForRow:(int)row
 {
-	NSUInteger connectedCount = [connectedServers count], savedCount = [savedServers count], filteredCount = [filteredServers count];
+	NSUInteger connectedCount = [self.connectedServers count], savedCount = [self.savedServers count], filteredCount = [filteredServers count];
 	
 	if (_isFilteringSavedServers)
 	{
@@ -1722,9 +1598,9 @@
 	if ( (row <= 0) || (row == 1+connectedCount) || (row > 1 + connectedCount + savedCount) )
 		return nil;
 	if (row <= connectedCount)
-		return connectedServers[row-1];
+		return self.connectedServers[row-1];
 	
-	return savedServers[row - connectedCount - 2];
+	return self.savedServers[row - connectedCount - 2];
 }
 
 - (void)openUrl:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)replyEvent
@@ -1737,7 +1613,7 @@
 		return;
 
 	// Check if hostname is already in saved servers...
-	for (id server in savedServers)
+	for (id server in self.savedServers)
 		if ([[[server label] lowercaseString] isEqualToString:[[url host] lowercaseString]]) {
 			[self connectInstance:server];
 			return;
@@ -1759,8 +1635,8 @@
 	if ([url query] != nil)
 		[self parseUrlQueryString:[url query] forSession:session];
 	
-	[connectedServers addObject:session];
-	[gui_serverList deselectAll:self];
+	[self.connectedServers addObject:session];
+	[self.gui_serverList deselectAll:self];
 	[self listUpdated];
 	[self connectInstance:session];
 }
@@ -1775,33 +1651,28 @@
 #pragma mark -
 #pragma mark Accessors
 
-- (CRDDisplayMode)displayMode
-{
-	return displayMode;
-}
-
 - (NSWindow *)unifiedWindow
 {
-	return gui_unifiedWindow;
+	return self.gui_unifiedWindow;
 }
 
 // Returns the connected server that the tab view is displaying
 - (CRDSession *)viewedServer
 {
-	if (displayMode == CRDDisplayUnified || displayMode == CRDDisplayFullscreen)
+	if (self.displayMode == CRDDisplayUnified || self.displayMode == CRDDisplayFullscreen)
 	{
-		CRDSession *selectedItem = [gui_tabView selectedItem];
+		CRDSession *selectedItem = [self.gui_tabView selectedItem];
 
 		if (selectedItem == nil)
 			return nil;
 	
-		for (CRDSession *inst in connectedServers)
+		for (CRDSession *inst in self.connectedServers)
 			if (inst == selectedItem)
 				return inst;
 	}
 	else // windowed mode
 	{
-		for (CRDSession *inst in connectedServers)
+		for (CRDSession *inst in self.connectedServers)
 			if ([[inst window] isMainWindow])
 				return inst;
 	}
@@ -1811,10 +1682,10 @@
 
 - (CRDSession *)selectedServer
 {
-	if (!CRDDrawerIsVisible(gui_serversDrawer))
+	if (!CRDDrawerIsVisible(self.gui_serversDrawer))
 		return nil;
 	else
-		return [self serverInstanceForRow:[gui_serverList selectedRow]];
+		return [self serverInstanceForRow:[self.gui_serverList selectedRow]];
 }
 
 #pragma mark -
@@ -1842,82 +1713,86 @@
 	{
 		[[NSNotificationCenter defaultCenter] postNotificationName:CRDMinimalViewDidChangeNotification object:nil];
 	
-		[gui_serverList noteHeightOfRowsWithIndexesChanged:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [gui_serverList numberOfRows])]];
+		[self.gui_serverList noteHeightOfRowsWithIndexesChanged:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [self.gui_serverList numberOfRows])]];
 	}
 }
 
-@end
-
-
-#pragma mark -
-
-@implementation AppController (Private)
-
-
-#pragma mark -
-#pragma mark General
-
 - (void)listUpdated
-{	
-	if ([userDefaults boolForKey:@"keepServersSortedAlphabetically"]) 
+{
+	if ([userDefaults boolForKey:@"keepServersSortedAlphabetically"])
 		[self sortSavedServersAlphabetically];
-	
-	// Remove all subvies of gui_serverList, to make sure that no progess indicators are out-of-place
-	for (NSView *subview in [[[gui_serverList subviews] copy] autorelease])
+
+	// Remove all subvies of self.gui_serverList, to make sure that no progess indicators are out-of-place
+	for (NSView *subview in [[[self.gui_serverList subviews] copy] autorelease])
 		[subview removeFromSuperviewWithoutNeedingDisplay];
-	
-	[gui_serverList noteNumberOfRowsChanged];
-	
-	if ([self serverInstanceForRow:[gui_serverList selectedRow]] == nil)
-		[gui_serverList selectRow:-1];
-		
+
+	[self.gui_serverList noteNumberOfRowsChanged];
+
+	if ([self serverInstanceForRow:[self.gui_serverList selectedRow]] == nil)
+		[self.gui_serverList selectRow:-1];
+
 	for (NSMenuItem *hotkeyMenuItem in [[gui_hotkey menu] itemArray])
 		[hotkeyMenuItem setEnabled:YES];
-	
-	
-	
+
+
+
 	// Update servers menu items
-	int separatorIndex = [gui_serversMenu indexOfItemWithTag:SERVERS_SEPARATOR_TAG], i; 
-	
+	int separatorIndex = [gui_serversMenu indexOfItemWithTag:SERVERS_SEPARATOR_TAG], i;
+
 	while ( (i = [gui_serversMenu numberOfItems]-1) > separatorIndex)
 		[gui_serversMenu removeItemAtIndex:i];
-	
+
 	NSMenuItem *menuItem;
 	CRDSession *inst;
-	
-	for (inst in connectedServers)
+
+	for (inst in self.connectedServers)
 	{
 		menuItem = [[NSMenuItem alloc] initWithTitle:[inst label] action:@selector(performServerMenuItem:) keyEquivalent:[NSString stringWithFormat:@"%ld", [inst hotkey]]];
 		[menuItem setKeyEquivalentModifierMask:NSCommandKeyMask];
 		[menuItem setRepresentedObject:inst];
 		[gui_serversMenu addItem:menuItem];
 		[menuItem release];
-		
+
 		if ([inst hotkey] != -1)
 			[[[gui_hotkey menu] itemAtIndex:[inst hotkey]] setEnabled:NO];
 	}
 
-	for (inst in savedServers)
+	for (inst in self.savedServers)
 	{
 		menuItem = [[NSMenuItem alloc] initWithTitle:[inst label] action:@selector(performServerMenuItem:) keyEquivalent:[NSString stringWithFormat:@"%ld", [inst hotkey]]];
 		[menuItem setKeyEquivalentModifierMask:NSCommandKeyMask];
 		[menuItem setRepresentedObject:inst];
 		[gui_serversMenu addItem:menuItem];
 		[menuItem release];
-		
+
 		if ([inst hotkey] != -1)
 			[[[gui_hotkey menu] itemAtIndex:[inst hotkey]] setEnabled:NO];
 	}
+}
+
+- (void)storeSavedServerPositions
+{
+	for (CRDSession *inst in self.savedServers)
+		[inst setValue:@([self.savedServers indexOfObject:inst]) forKey:@"preferredRowIndex"];
 }
 
 // Validates non-menu and toolbar interface items
 - (void)validateControls
 {
 	CRDSession *inst = [self selectedServer];
-	
+
 	[gui_connectButton setEnabled:(inst != nil && [inst status] == CRDConnectionClosed)];
 	[gui_inspectorButton setEnabled:(inst != nil)];
 }
+
+@end
+
+#pragma mark -
+
+@implementation AppController (Private)
+
+#pragma mark -
+#pragma mark General
 
 - (void)setInspectorEnabled:(BOOL)enabled
 {
@@ -1979,11 +1854,6 @@
 		else
 			CRDLog(CRDLogLevelError, @"Invalid Parameter: %@", setting);
 	}
-}
-
-- (void)setDisplayMode:(CRDDisplayMode)newDisplayMode
-{
-	displayMode = newDisplayMode;
 }
 
 #pragma mark -
@@ -2138,9 +2008,9 @@
 - (void)toggleDrawer:(id)sender visible:(BOOL)visible
 {
 	if (visible)
-		[gui_serversDrawer open];
+		[self.gui_serversDrawer open];
 	else
-		[gui_serversDrawer close];
+		[self.gui_serversDrawer close];
 	
 	[gui_toolbar validateVisibleItems];
 }
@@ -2155,7 +2025,7 @@
 	@autoreleasepool {
         if ([[inst valueForKey:@"fullscreen"] boolValue])
         {
-            NSSize screenSize = [[gui_unifiedWindow screen] frame].size;
+            NSSize screenSize = [[self.gui_unifiedWindow screen] frame].size;
             [inst setValue:@((NSInteger)screenSize.width) forKey:@"screenWidth"];
             [inst setValue:@((NSInteger)screenSize.height) forKey:@"screenHeight"];
         }
@@ -2181,22 +2051,22 @@
 		if (![inst isTemporary])
 		{
 			[[inst retain] autorelease];
-			[savedServers removeObject:inst];
-			[connectedServers addObject:inst];
+			[self.savedServers removeObject:inst];
+			[self.connectedServers addObject:inst];
 		}
 		
-		if (!_isFilteringSavedServers && ([connectedServers indexOfObject:inst] != NSNotFound) )
-			[gui_serverList selectRow:(1 + [connectedServers indexOfObject:inst])];
+		if (!_isFilteringSavedServers && ([self.connectedServers indexOfObject:inst] != NSNotFound) )
+			[self.gui_serverList selectRow:(1 + [self.connectedServers indexOfObject:inst])];
 		
 		[self listUpdated];
 		
 		// Create gui
-		if ( (displayMode == CRDDisplayUnified) || (displayMode == CRDDisplayFullscreen) )
+		if ( (self.displayMode == CRDDisplayUnified) || (self.displayMode == CRDDisplayFullscreen) )
 		{
-			[inst createUnified:!CRDPreferenceIsEnabled(CRDPrefsScaleSessions) enclosure:[gui_tabView frame]];
-			[gui_tabView addItem:inst];
-			[gui_tabView selectLastItem:self];
-			[gui_unifiedWindow makeFirstResponder:[inst view]];
+			[inst createUnified:!CRDPreferenceIsEnabled(CRDPrefsScaleSessions) enclosure:[self.gui_tabView frame]];
+			[self.gui_tabView addItem:inst];
+			[self.gui_tabView selectLastItem:self];
+			[self.gui_unifiedWindow makeFirstResponder:[inst view]];
 		}
 		else
 		{
@@ -2210,7 +2080,7 @@
 			return;
 		}
 		
-		if (displayMode == CRDDisplayUnified)
+		if (self.displayMode == CRDDisplayUnified)
 			[self autosizeUnifiedWindow];
 	}
 	else
@@ -2242,9 +2112,9 @@
 			{
 				[self connectInstance:inst];
 			}
-			else if ([inst isTemporary]) // Temporary items may be in connectedServers even though connection failed
+			else if ([inst isTemporary]) // Temporary items may be in self.connectedServers even though connection failed
 			{
-				[connectedServers removeObject:inst];
+				[self.connectedServers removeObject:inst];
 				[self listUpdated];
 			}
 		}
@@ -2263,29 +2133,29 @@
 - (void)autosizeUnifiedWindowWithAnimation:(BOOL)animate
 {
 	CRDSession *inst = [self viewedServer];
-	NSRect currentScreenFrame = [[gui_unifiedWindow screen] visibleFrame], oldWindowFrame = [gui_unifiedWindow frame], newWindowFrame;
+	NSRect currentScreenFrame = [[self.gui_unifiedWindow screen] visibleFrame], oldWindowFrame = [self.gui_unifiedWindow frame], newWindowFrame;
 	NSSize newContentSize;
 	float scrollerWidth = [NSScroller scrollerWidth];
-	float toolbarHeight = oldWindowFrame.size.height - [[gui_unifiedWindow contentView] frame].size.height;
+	float toolbarHeight = oldWindowFrame.size.height - [[self.gui_unifiedWindow contentView] frame].size.height;
 
 	
 	if ([self displayMode] == CRDDisplayUnified && inst)
 	{
 		// Not pretty but better than before...
 		newContentSize = ([[inst view] bounds].size.width > 100) ? [[inst view] bounds].size : NSMakeSize(CRDDefaultFrameWidth, CRDDefaultFrameHeight);
-		[gui_unifiedWindow setContentMaxSize:newContentSize];
+		[self.gui_unifiedWindow setContentMaxSize:newContentSize];
 	}
 	else
 	{
 		newContentSize = [[NSScreen mainScreen] visibleFrame].size;
-		[gui_unifiedWindow setContentMaxSize:newContentSize];
+		[self.gui_unifiedWindow setContentMaxSize:newContentSize];
 	}
 
 	
 	if (CRDPreferenceIsEnabled(CRDPrefsScaleSessions) && inst)
-		[gui_unifiedWindow setContentAspectRatio:newContentSize];
+		[self.gui_unifiedWindow setContentAspectRatio:newContentSize];
 	else
-		[gui_unifiedWindow setContentResizeIncrements:NSMakeSize(1.0,1.0)];
+		[self.gui_unifiedWindow setContentResizeIncrements:NSMakeSize(1.0,1.0)];
 	
 	newWindowFrame = NSMakeRect(oldWindowFrame.origin.x, 
 								oldWindowFrame.origin.y + oldWindowFrame.size.height - newContentSize.height - toolbarHeight,
@@ -2293,13 +2163,13 @@
 								newContentSize.height + toolbarHeight
 								);
 	
-	float drawerWidth = [gui_serversDrawer contentSize].width + 
-			([[[gui_serversDrawer contentView] window] frame].size.width-[gui_serversDrawer contentSize].width) / 2.0 + 1.0;
+	float drawerWidth = [self.gui_serversDrawer contentSize].width + 
+			([[[self.gui_serversDrawer contentView] window] frame].size.width-[self.gui_serversDrawer contentSize].width) / 2.0 + 1.0;
 	
 	// For our adjustments, add the drawer width
-	if ([gui_serversDrawer state] == NSDrawerOpenState)
+	if ([self.gui_serversDrawer state] == NSDrawerOpenState)
 	{
-		if ([gui_serversDrawer edge] == NSMinXEdge) // left side
+		if ([self.gui_serversDrawer edge] == NSMinXEdge) // left side
 			newWindowFrame.origin.x -= drawerWidth;
 		
 		newWindowFrame.size.width += drawerWidth;
@@ -2340,11 +2210,11 @@
 	
 		
 	// Reset window rect to exclude drawer
-	if ([gui_serversDrawer state] == NSDrawerOpenState)
+	if ([self.gui_serversDrawer state] == NSDrawerOpenState)
 	{
-		float drawerWidth = [gui_serversDrawer contentSize].width;
-		drawerWidth += ([[[gui_serversDrawer contentView] window] frame].size.width - drawerWidth) / 2.0 + 1;
-		if ([gui_serversDrawer edge] == NSMinXEdge) // left side
+		float drawerWidth = [self.gui_serversDrawer contentSize].width;
+		drawerWidth += ([[[self.gui_serversDrawer contentView] window] frame].size.width - drawerWidth) / 2.0 + 1;
+		if ([self.gui_serversDrawer edge] == NSMinXEdge) // left side
 			newWindowFrame.origin.x += drawerWidth;
 
 		newWindowFrame.size.width -= drawerWidth;
@@ -2373,16 +2243,16 @@
 		}
 	}
 	
-    id resizeTarget = animate ? [gui_unifiedWindow animator] : gui_unifiedWindow;
+    id resizeTarget = animate ? [self.gui_unifiedWindow animator] : self.gui_unifiedWindow;
     
 	[NSAnimationContext beginGrouping];
 	if ( ([self displayMode] != CRDDisplayUnified) || ([self viewedServer] == nil))
 	{
-		[gui_unifiedWindow setTitle:@"CoRD"];
+		[self.gui_unifiedWindow setTitle:@"CoRD"];
 		[resizeTarget setFrameUsingName:@"UnifiedWindowFrame"];
 	}
 	else {
-		[gui_unifiedWindow setTitle:[[self viewedServer] label]];
+		[self.gui_unifiedWindow setTitle:[[self viewedServer] label]];
 		[resizeTarget setFrame:newWindowFrame display:YES];
 	}
 	[NSAnimationContext endGrouping];
@@ -2415,7 +2285,7 @@
 
 - (void)addSavedServer:(CRDSession *)inst
 {
-	[self addSavedServer:inst atIndex:[savedServers count] select:YES];
+	[self addSavedServer:inst atIndex:[self.savedServers count] select:YES];
 }
 
 - (void)addSavedServer:(CRDSession *)inst atIndex:(int)index
@@ -2425,14 +2295,14 @@
 
 - (void)addSavedServer:(CRDSession *)inst atIndex:(int)index select:(BOOL)select
 {
-	if ( !inst || (index < 0) || (index > [savedServers count]) )
+	if ( !inst || (index < 0) || (index > [self.savedServers count]) )
 		return;
 	
 	[inst setIsTemporary:NO];
 	
-	index = MIN(MAX(index, 0), [savedServers count]);
+	index = MIN(MAX(index, 0), [self.savedServers count]);
 		
-	[savedServers insertObject:inst atIndex:index];
+	[self.savedServers insertObject:inst atIndex:index];
 	
 	if (_isFilteringSavedServers)
 		[self filterServers:nil];
@@ -2440,7 +2310,7 @@
 	[self listUpdated];
 	
 	if (select)
-		[gui_serverList selectRow:(2 + [connectedServers count] + [savedServers indexOfObjectIdenticalTo:inst])];
+		[self.gui_serverList selectRow:(2 + [self.connectedServers count] + [self.savedServers indexOfObjectIdenticalTo:inst])];
 		
 	[inst addObserver:self forKeyPath:@"label" options:(NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld) context:NULL];
 }
@@ -2455,7 +2325,7 @@
 	
 	[inst removeObserver:self forKeyPath:@"label"];
 	
-	[savedServers removeObject:inst];
+	[self.savedServers removeObject:inst];
 	
 	if (inspectedServer == inst)
 		inspectedServer = nil;
@@ -2468,7 +2338,7 @@
 
 - (void)sortSavedServersByStoredListPosition
 {
-	[savedServers sortUsingSelector:@selector(compareUsingPreferredOrder:)];
+	[self.savedServers sortUsingSelector:@selector(compareUsingPreferredOrder:)];
 }
 
 - (void)sortSavedServersAlphabetically
@@ -2476,14 +2346,9 @@
 	NSArray *sortDescriptors = @[[[[NSSortDescriptor alloc] initWithKey:@"label" ascending:YES] autorelease],
 			[[[NSSortDescriptor alloc] initWithKey:@"hostName" ascending:YES] autorelease],
 			[[[NSSortDescriptor alloc] initWithKey:@"username" ascending:YES] autorelease]];
-	[savedServers sortUsingDescriptors:sortDescriptors];
+	[self.savedServers sortUsingDescriptors:sortDescriptors];
 }
 
-- (void)storeSavedServerPositions
-{
-	for (CRDSession *inst in savedServers) 
-		[inst setValue:@([savedServers indexOfObject:inst]) forKey:@"preferredRowIndex"];
-}
 
 @end
 

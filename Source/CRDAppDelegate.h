@@ -10,9 +10,11 @@
 #import "CRDShared.h"
 
 @class AppController;
+@class CRDServerList;
 
 @interface CRDAppDelegate : NSObject <CRDApplicationDelegate>
 
-@property (strong) AppController *appController;
+@property (assign) AppController *appController;
+@property (assign) BOOL appIsTerminating;
 
 @end

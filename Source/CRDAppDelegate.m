@@ -7,8 +7,20 @@
 //
 
 #import "CRDAppDelegate.h"
+#import "CRDSession.h"
+#import "AppController.h"
+#import "CRDSessionView.h"
 
 @implementation CRDAppDelegate
+
+- (id)init
+{
+    if (!(self = [super init]))
+        return nil;
+    _appIsTerminating = NO;
+    
+    return self;
+}
 
 - (BOOL)application:(NSApplication *)sender openFile:(NSString *)filename
 {
@@ -18,7 +30,7 @@
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-	for ( id file in filenames )
+	for (id file in filenames)
 	{
 		if ([[[file pathExtension] lowercaseString] isEqualTo:@"rdp"]) {
 			CRDSession *inst = [[CRDSession alloc] initWithPath:file];
@@ -26,10 +38,10 @@
 			if (inst != nil)
 			{
 				[inst setIsTemporary:YES];
-				[connectedServers addObject:inst];
-				[gui_serverList deselectAll:self];
-				[self listUpdated];
-				[self connectInstance:inst];
+				[self.appController.connectedServers addObject:inst];
+				[self.appController.gui_serverList deselectAll:self];
+				[self.appController listUpdated];
+				[self.appController connectInstance:inst];
 			}
 		}
 		else if ([[[file pathExtension] lowercaseString] isEqualTo:@"msrcincident"]) {
@@ -52,79 +64,79 @@
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification
 {
-	CRDLog(CRDLogLevelInfo,@"CoRD is Terminating, Cleaning Up");
+    CRDLog(CRDLogLevelInfo,@"CoRD is Terminating, Cleaning Up");
 
-	_appIsTerminating = YES;
+	self.appIsTerminating = YES;
 
 	CRDLog(CRDLogLevelDebug, @"Firing tableViewSelectionDidChange to force inspector to update");
 	[self.appController tableViewSelectionDidChange:nil];
 
 	// Save current state to user defaults
 	CRDLog(CRDLogLevelDebug, @"Saving current state to user defaults");
-	[userDefaults setInteger:[gui_serversDrawer edge] forKey:CRDDefaultsUnifiedDrawerSide];
-	[userDefaults setBool:CRDDrawerIsVisible(gui_serversDrawer) forKey:CRDDefaultsUnifiedDrawerShown];
-	[userDefaults setFloat:[gui_serversDrawer contentSize].width forKey:CRDDefaultsUnifiedDrawerWidth];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[self.appController gui_serversDrawer] edge] forKey:CRDDefaultsUnifiedDrawerSide];
+	[[NSUserDefaults standardUserDefaults] setBool:CRDDrawerIsVisible([self.appController gui_serversDrawer]) forKey:CRDDefaultsUnifiedDrawerShown];
+	[[NSUserDefaults standardUserDefaults] setFloat:[[self.appController gui_serversDrawer] contentSize].width forKey:CRDDefaultsUnifiedDrawerWidth];
 
 	NSDisableScreenUpdates();
 
 	// Clean up the fullscreen window
-	if (displayMode == CRDDisplayFullscreen)
+	if ([self.appController displayMode] == CRDDisplayFullscreen)
 	{
 		CRDLog(CRDLogLevelDebug, @"Cleaning up Fullscreen Window");
-		[gui_tabView exitFullScreenModeWithOptions:nil];
-		[self setDisplayMode:displayModeBeforeFullscreen];
+		[[self.appController gui_tabView] exitFullScreenModeWithOptions:nil];
+		[self.appController setDisplayMode:[self.appController displayModeBeforeFullscreen]];
 	}
-	[userDefaults setInteger:displayMode forKey:CRDDefaultsDisplayMode];
+	[[NSUserDefaults standardUserDefaults] setInteger:[self.appController displayMode] forKey:CRDDefaultsDisplayMode];
 
 	// Disconnect all connected servers
 	CRDLog(CRDLogLevelInfo, @"Disconnecting any connected severs");
-	for ( CRDSession *inst in connectedServers )
-		[self disconnectInstance:inst];
+	for (CRDSession *inst in self.appController.connectedServers)
+		[self.appController disconnectInstance:inst];
 
-	[gui_unifiedWindow orderOut:nil];
+	[[self.appController gui_unifiedWindow] orderOut:nil];
 
 	NSEnableScreenUpdates();
 
 	// Flush each saved server to file (so that the perferred row will be saved)
 	CRDLog(CRDLogLevelDebug, @"Flush and store servers");
-	[self storeSavedServerPositions];
-	for (CRDSession *inst in savedServers)
+	[self.appController storeSavedServerPositions];
+	for (CRDSession *inst in self.appController.savedServers)
 		[inst flushChangesToFile];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-	// Make sure the drawer is in the user-saved position. Do it here (not awakeFromNib) so that it displays nicely
-	[gui_serversDrawer setPreferredEdge:[userDefaults integerForKey:CRDDefaultsUnifiedDrawerSide]];
+    // Make sure the drawer is in the user-saved position. Do it here (not awakeFromNib) so that it displays nicely
+	[[self.appController gui_serversDrawer] setPreferredEdge:[[NSUserDefaults standardUserDefaults] integerForKey:CRDDefaultsUnifiedDrawerSide]];
 
-	float width = [userDefaults floatForKey:CRDDefaultsUnifiedDrawerWidth];
-	float height = [gui_serversDrawer contentSize].height;
+	float width = [[NSUserDefaults standardUserDefaults] floatForKey:CRDDefaultsUnifiedDrawerWidth];
+	float height = [[self.appController gui_serversDrawer] contentSize].height;
 	if (width > 0)
-		[gui_serversDrawer setContentSize:NSMakeSize(width, height)];
+		[[self.appController gui_serversDrawer] setContentSize:NSMakeSize(width, height)];
 
-	if ([userDefaults boolForKey:CRDDefaultsUnifiedDrawerShown])
-		[gui_serversDrawer openOnEdge:[userDefaults integerForKey:CRDDefaultsUnifiedDrawerSide]];
+	if ([[NSUserDefaults standardUserDefaults] boolForKey:CRDDefaultsUnifiedDrawerShown])
+		[[self.appController gui_serversDrawer] openOnEdge:[[NSUserDefaults standardUserDefaults] integerForKey:CRDDefaultsUnifiedDrawerSide]];
 
-	[self validateControls];
+	[self.appController validateControls];
 }
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication *)theApplication hasVisibleWindows:(BOOL)hasVisibleWindows
 {
 	if (!hasVisibleWindows)
-		[gui_unifiedWindow makeKeyAndOrderFront:nil];
+		[self.appController.gui_unifiedWindow makeKeyAndOrderFront:nil];
 
 	return YES;
 }
 
 - (NSResponder *)application:(NSApplication *)application shouldForwardEvent:(NSEvent *)ev
 {
-	CRDSessionView *viewedSessionView = [[self viewedServer] view];
+	CRDSessionView *viewedSessionView = [[self.appController viewedServer] view];
 	NSWindow *viewedSessionWindow = [viewedSessionView window];
 
 	BOOL shouldForward = YES;
 
 	shouldForward &= ([ev type] == NSKeyDown) || ([ev type] == NSKeyUp) || ([ev type] == NSFlagsChanged);
-	shouldForward &= ([viewedSessionWindow firstResponder] == viewedSessionView) && [viewedSessionWindow isKeyWindow] && ([viewedSessionWindow isMainWindow] || ([self displayMode] == CRDDisplayFullscreen));
+	shouldForward &= ([viewedSessionWindow firstResponder] == viewedSessionView) && [viewedSessionWindow isKeyWindow] && ([viewedSessionWindow isMainWindow] || ([self.appController displayMode] == CRDDisplayFullscreen));
 
 	return shouldForward ? viewedSessionView : nil;
 }

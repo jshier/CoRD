@@ -23,9 +23,10 @@
 @class CRDServerList;
 @class CRDSession;
 @class CRDTabView;
+@class CRDAppDelegate;
 @protocol CRDApplicationDelegate;
 
-@interface AppController : NSObject <NSWindowDelegate, CRDApplicationDelegate, NSTableViewDelegate, CRDServerListDataSource>
+@interface AppController : NSObject <NSWindowDelegate, NSTableViewDelegate, CRDServerListDataSource>
 {
 	// Inspector
 	IBOutlet NSWindow *gui_inspector;
@@ -38,32 +39,31 @@
     CRDSession *inspectedServer;
 	
 	// Drawer
-	IBOutlet NSDrawer *gui_serversDrawer;
-	IBOutlet CRDServerList *gui_serverList;
+	
+	
 	IBOutlet NSButton *gui_connectButton, *gui_inspectorButton, *gui_addNewButton;
 	CRDLabelCell *connectedServersLabel, *savedServersLabel, *filteredServersLabel;
 	
 	// Unified window
-	IBOutlet NSWindow *gui_unifiedWindow;
+	
 	IBOutlet NSComboBox *gui_quickConnect;
-	IBOutlet CRDTabView *gui_tabView;
+	
 	IBOutlet NSToolbar *gui_toolbar;
 	IBOutlet NSToolbarItem *gui_toolbarServers, *gui_toolbarFullscreen, *gui_toolbarWindowed, *gui_toolbarDisconnect;
     
 	// Other display modes
-	CRDDisplayMode displayMode, displayModeBeforeFullscreen;
 	NSPoint windowCascadePoint;
 	IBOutlet NSUserDefaultsController *userDefaultsController;
 	NSUserDefaults *userDefaults;
 	
 	// Preferences window
 	IBOutlet NSWindow *gui_preferencesWindow;
-	
+
 	// Menu
 	IBOutlet NSMenu *gui_serversMenu;
 	
 	// Active sessions, disconnected saved servers, and current search results
-	NSMutableArray *connectedServers, *savedServers, *filteredServers;
+	NSMutableArray *filteredServers;
 	
 	BOOL _isFilteringSavedServers;
 	
@@ -73,6 +73,16 @@
 	
 	BOOL _appIsTerminating, useMinimalServersList;
 }
+
+@property (strong) CRDAppDelegate *appDelegate;
+@property (assign) IBOutlet NSDrawer *gui_serversDrawer;
+@property (assign) IBOutlet NSWindow *gui_unifiedWindow;
+@property (assign) IBOutlet CRDTabView *gui_tabView;
+@property (assign) IBOutlet CRDServerList *gui_serverList;
+@property (strong) NSMutableArray *savedServers;
+@property (strong) NSMutableArray *connectedServers;
+@property (assign) CRDDisplayMode displayMode;
+@property (assign) CRDDisplayMode displayModeBeforeFullscreen;
 
 // Actions
 - (IBAction)addNewSavedServer:(id)sender;
@@ -136,6 +146,10 @@
 
 - (void)holdSavedServer:(NSInteger)row;
 - (void)reinsertHeldSavedServer:(NSInteger)intoRow;
+- (void)listUpdated;
+- (void)setDisplayMode:(CRDDisplayMode)displayMode;
+- (void)storeSavedServerPositions;
+- (void)validateControls;
 
 @end
 
